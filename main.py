@@ -94,7 +94,10 @@ async def signup(payload: SignUp):
 @app.post(f"{prefix}/login")
 async def login(payload: LogIN):
     try:
-        details = usersClient.find_one({"email" : payload.email})
+        if payload.login_type == "email":
+            details = usersClient.find_one({"email" : payload.email})
+        elif payload.login_type == "phone":
+            details = usersClient.find_one({"phone_no" : payload.phone_no})
     except:
         raise HTTPException(status_code=402, detail="Error in signup with db, please try again")
     
