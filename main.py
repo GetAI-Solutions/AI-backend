@@ -9,6 +9,7 @@ from io import BytesIO
 from PIL import Image
 import pymongo
 import json
+import yagmail
 
 
 from api_templates.templates import SignUp, LogIN
@@ -69,6 +70,12 @@ app.add_middleware(
 @app.get(f"{prefix}/")
 async def root():
     return "Hello World - Welcome to get-ai service"
+
+@app.post(f"{prefix}/send-otp")
+def send_otp(email: str = Form(...)):
+    yag = yagmail.SMTP("getaicompany@gmail.com", "Disposable12345@")
+    otp = ""
+    yag.send(subject="Great!")
 
 @app.post(f"{prefix}/signup")
 async def signup(payload: SignUp):
@@ -162,3 +169,24 @@ async def get_product_summary(bar_code: str = Form(...)):
         }
     else:
         raise HTTPException(status_code=404, detail="Product not found")
+
+@app.post(f"{prefix}/add-product")
+async def add_product(file: UploadFile = File(...), id: str = Form(...), product_name: str = Form(...)):
+    try:
+        prod_details = await file.read()
+        print(prod_details.decode("utf-8"))
+    except:
+        raise HTTPException(status_code=402, detail="Error with file")
+    if len(prod_details) < 10:
+        try:
+            dets = {
+                "product_code": id,
+                "product_name" : product_name,
+                "product_details" : prod_details
+            }
+            productsClient.insert_one(dets)
+            return dets
+        except:
+            raise HTTPException(status_code=400, detail="Product could not be added try again")
+    else:
+        raise HTTPException(status_code=400, detail="Product details too short")
