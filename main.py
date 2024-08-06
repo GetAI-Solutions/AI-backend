@@ -171,7 +171,7 @@ async def get_product_summary(bar_code: str = Form(...)):
         raise HTTPException(status_code=404, detail="Product not found")
 
 @app.post(f"{prefix}/add-product")
-async def add_product(file: UploadFile = File(...), id: str = Form(...), product_name: str = Form(...)):
+async def add_product(file: UploadFile = File(...), product_code: str = Form(...), product_name: str = Form(...)):
     try:
         prod_details = await file.read()
         print(prod_details.decode("utf-8"))
@@ -182,12 +182,12 @@ async def add_product(file: UploadFile = File(...), id: str = Form(...), product
     if len(prod_details) > 10:
         try:
             dets = {
-                "product_code": id,
+                "product_code": product_code,
                 "product_name" : product_name,
                 "product_details" : prod_details
             }
             productsClient.insert_one(dets)
-            return dets
+            return {"msg" : "product added"}
         except:
             raise HTTPException(status_code=400, detail="Product could not be added try again")
     else:
