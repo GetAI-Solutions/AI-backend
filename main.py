@@ -71,11 +71,11 @@ app.add_middleware(
 async def root():
     return "Hello World - Welcome to get-ai service"
 
-@app.post(f"{prefix}/send-otp")
+"""@app.post(f"{prefix}/send-otp")
 def send_otp(email: str = Form(...)):
     yag = yagmail.SMTP("getaicompany@gmail.com", "Disposable12345@")
     otp = ""
-    yag.send(subject="Great!")
+    yag.send(subject="Great!")"""
 
 @app.post(f"{prefix}/signup")
 async def signup(payload: SignUp):
