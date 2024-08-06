@@ -178,7 +178,8 @@ async def add_product(file: UploadFile = File(...), id: str = Form(...), product
         prod_details = prod_details.decode("utf-8")
     except:
         raise HTTPException(status_code=402, detail="Error with file")
-    if len(prod_details) < 10:
+    print(len(prod_details))
+    if len(prod_details) > 10:
         try:
             dets = {
                 "product_code": id,
