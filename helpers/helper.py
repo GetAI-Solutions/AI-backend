@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import cv2
 from pyzbar import pyzbar
+import replicate
 
 
 def generate_chat_prompt(query, content):
@@ -30,13 +31,6 @@ def generate_chat_prompt(query, content):
     """
 
     return template
-
-response = ""
-"""for event in replicate.stream("snowflake/snowflake-arctic-instruct",
-                input={"prompt": prompt,
-                        "temperature": 0.2
-                        }):
-    response += str(event)"""
 
 
 
@@ -73,7 +67,19 @@ def get_resp(client, sys_msgs, text = "", summary = False):
 
     return chat_completion.choices[0].message.content
 
-def generate_prompt(content):
+def get_resp_sf(sys_msg, text):
+    prompt = sys_msg + "\n" + text
+    response = ""
+    for event in replicate.stream("snowflake/snowflake-arctic-instruct",
+                            input={"prompt": prompt,
+                                    "temperature": 0.2
+                                    }):
+                response += str(event)
+    
+    return response
+
+
+def generate_prompt_summary(content):
     template = f"""
 
     You are a friendly AI assistant to help users know more about a product. The dteails of the product are provided in the <content> tag below
@@ -98,3 +104,15 @@ def scan_barcode_from_image(image):
         cv2.rectangle(image_np, (x, y), (x + w, y + h), (0, 255, 0), 2)
         cv2.putText(image_np, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     return Image.fromarray(image_np), barcodes
+
+def add_to_user_product_hist(id, user_id, uh_client):
+    try:
+        curr_uh = uh_client.find_one({"uid" : user_id})
+    except Exception as e:
+        return e
+    
+    curr_ph = curr_uh["product_history"]
+    updated_ph = curr_ph .append(int(id))
+    updated_uh = curr_uh
+    updated_uh["product_history"] = updated_ph
+    uh_client.find_one_and_update({"uid" : user_id}, updated_ph)
