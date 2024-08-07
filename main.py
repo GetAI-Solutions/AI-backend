@@ -8,9 +8,10 @@ from PIL import Image
 import pymongo
 import json
 import yagmail
+import random
 
 from api_templates.templates import SignUp, LogIN
-from helpers.helper import scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, get_resp, add_to_user_product_hist, get_resp_sf, generate_prompt_summary
+from helpers.helper import scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, get_resp, add_to_user_product_hist, get_resp_sf, generate_prompt_summary, send_otp_mail
 
 ## Load environment variables from .env file
 load_dotenv()
@@ -18,6 +19,7 @@ appENV = os.getenv("APP_ENV", "local")
 OAI_KEY = os.getenv("OAI_KEY", "local")
 DATABASE_URI = os.getenv("DATABASE_URI", "local")
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
+g_app_password = os.getenv("G_APP_PASSWORD")
 
 ## Initialize MongoDB client and databases
 DBClient = pymongo.MongoClient(DATABASE_URI)
@@ -95,6 +97,19 @@ async def signup(payload: SignUp):
         "message": "Sign Up successful",
         "status_code": 200
     }
+
+## Define endpoint for OTP sending
+@app.post(f"{prefix}/send-otp")
+async def send_otp(email : str = Form(...)):
+    otp = random.randint(100000, 999999)
+    try:
+        send_otp_mail(email, g_app_password, str(otp))
+    except Exception as e:
+        print(str(e))
+        raise HTTPException(status_code=400, detail="Error sending otp")
+    
+    return {"otp" : otp}
+
 
 ## Define endpoint for user login
 @app.post(f"{prefix}/login")

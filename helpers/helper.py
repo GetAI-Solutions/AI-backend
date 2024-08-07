@@ -5,6 +5,10 @@ import pandas as pd
 import cv2
 from pyzbar import pyzbar
 import replicate
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from api_templates.otp_template import html_content
 
 
 def generate_chat_prompt(query, content):
@@ -115,3 +119,25 @@ def add_to_user_product_hist(id, user_id, uh_client):
     updated_uh = curr_uh
     updated_uh["product_history"] = updated_ph
     uh_client.find_one_and_update({"uid" : user_id}, updated_ph)
+
+def send_otp_mail(email, password, otp, html_content = html_content):
+    # Email details
+    sender_email = "getaicompany@gmail.com"
+    receiver_email = email
+    password = password
+    subject = "Your OTP for signup"
+    html_content = html_content.replace("{{ otp }}", otp)
+    # Set up the MIME
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    message["Subject"] = subject
+    message.attach(MIMEText(html_content, "html"))
+    
+    # Connect to the Gmail SMTP server using SSL
+    server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+    server.login(sender_email, password)
+    server.sendmail(sender_email, receiver_email, message.as_string())
+    server.quit()
+    print("Email sent successfully!")
+    
