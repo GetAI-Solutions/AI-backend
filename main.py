@@ -194,7 +194,7 @@ async def add_product(file: UploadFile = File(...), product_code: str = Form(...
     if len(prod_details) > 10:
         try:
             dets = {
-                "product_code": product_code,
+                "product_code": int(product_code),
                 "product_name": product_name,
                 "product_details": prod_details
             }
