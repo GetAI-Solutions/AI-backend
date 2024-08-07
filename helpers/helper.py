@@ -70,13 +70,12 @@ def get_resp(client, sys_msgs, text = "", summary = False):
 def get_resp_sf(sys_msg, text):
     prompt = sys_msg + "\n" + text
     response = ""
-    for event in replicate.stream("snowflake/snowflake-arctic-instruct",
+    fr = ' '.join([str(event) for event in replicate.stream("snowflake/snowflake-arctic-instruct",
                             input={"prompt": prompt,
                                     "temperature": 0.2
-                                    }):
-                response += str(event)
+                                    })])
     
-    return response
+    return fr
 
 
 def generate_prompt_summary(content):

@@ -10,13 +10,14 @@ import json
 import yagmail
 
 from api_templates.templates import SignUp, LogIN
-from helpers.helper import scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, get_resp, add_to_user_product_hist, get_resp_sf
+from helpers.helper import scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, get_resp, add_to_user_product_hist, get_resp_sf, generate_prompt_summary
 
 ## Load environment variables from .env file
 load_dotenv()
 appENV = os.getenv("APP_ENV", "local")
 OAI_KEY = os.getenv("OAI_KEY", "local")
 DATABASE_URI = os.getenv("DATABASE_URI", "local")
+os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
 
 ## Initialize MongoDB client and databases
 DBClient = pymongo.MongoClient(DATABASE_URI)
@@ -164,11 +165,15 @@ async def get_product_summary(bar_code: str = Form(...)):
         raise HTTPException(status_code=402, detail="Error with DB")
     if product:
         details = product["details"]
-        sys_msg_summary = get_sys_msgs_summary(details)
+        #sys_msg_summary = get_sys_msgs_summary(details)
 
-        summary_txt = get_resp(client, sys_msg_summary, "", summary=True)
+        #summary_txt = get_resp(client, sys_msg_summary, "", summary=True)
 
-        print(summary_txt)
+        sys_msg = generate_prompt_summary(details)
+
+        summary_txt = get_resp_sf(sys_msg, text = "")
+
+        #print(summary_txt)
 
         return {
             "product_summary": summary_txt
