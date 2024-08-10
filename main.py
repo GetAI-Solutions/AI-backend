@@ -125,15 +125,18 @@ async def login(payload: LogIN):
     if details:
         print(str(details["_id"]))
         if details["password"] == payload.password:
-            return {
-                "message": "Sign In successful",
-                "uid": str(details["_id"]),
-                "user_name": details["user_name"],
-                "email": details["email"],
-                "phone_no": details["phone_no"],
-                "country": details["country"],
-                "preferred_language": details["preferred_language"]
-            }
+            try: 
+                return {
+                    "message": "Sign In successful",
+                    "uid": str(details["_id"]),
+                    "user_name": details["user_name"],
+                    "email": details["email"],
+                    "phone_no": details["phone_no"],
+                    "country": details["country"],
+                    "preferred_language": details["preferred_language"]
+                }
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=str(e))
         else:
             raise HTTPException(status_code=400, detail="Wrong Password")
     else:
@@ -208,15 +211,22 @@ async def add_product(file: UploadFile = File(...), product_code: str = Form(...
     print(len(prod_details))
     if len(prod_details) > 10:
         try:
-            dets = {
-                "product_code": int(product_code),
-                "product_name": product_name,
-                "product_details": prod_details
-            }
-            productsClient.insert_one(dets)
-            return {"msg": "Product added"}
+            existingdetails = productsClient.find_one({'product_code' : int(product_code)})
         except:
             raise HTTPException(status_code=400, detail="Product could not be added, try again")
+        if existingdetails:
+            raise HTTPException(status_code=400, detail="Product already in DB, try another product")
+        else:
+            try:
+                dets = {
+                    "product_code": int(product_code),
+                    "product_name": product_name,
+                    "product_details": prod_details
+                }
+                productsClient.insert_one(dets)
+                return {"msg": "Product added"}
+            except:
+                raise HTTPException(status_code=400, detail="Product could not be added, try again")
     else:
         raise HTTPException(status_code=400, detail="Product details too short")
 
