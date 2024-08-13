@@ -13,3 +13,9 @@ class LogIN(BaseModel):
     password: str = "test_password"
     login_type: str = "email"
     phone_no: str = "+2348097219648" 
+
+class chatTemp(BaseModel):
+    userID: str = "id"
+    prod_id:str = "product_barcode"
+    product_full_details: str = "full_details"
+    user_message:str = "user_message"

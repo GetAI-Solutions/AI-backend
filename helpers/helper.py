@@ -103,10 +103,23 @@ def add_to_user_product_hist(id, user_id, uh_client):
         return e
     
     curr_ph = curr_uh["product_history"]
-    updated_ph = curr_ph .append(int(id))
+    updated_ph = curr_ph + [(int(id))]
     updated_uh = curr_uh
     updated_uh["product_history"] = updated_ph
     uh_client.find_one_and_update({"uid" : user_id}, updated_ph)
+
+def add_to_user_chat_hist(conv, user_id, prod_id, uh_client):
+    try:
+        curr_uh = uh_client.find_one({"uid" : user_id})
+
+    except Exception as e:
+        return e
+    if prod_id in curr_uh["chat_history"].keys():
+        curr_uh["chat_history"][prod_id].append(conv)
+    else:
+        curr_uh["chat_history"][prod_id] = [conv]
+
+    uh_client.find_one_and_update({"uid" : user_id}, curr_uh)
 
 def send_otp_mail(email, password, otp, html_content = html_content):
     # Email details

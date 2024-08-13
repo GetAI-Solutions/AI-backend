@@ -10,8 +10,8 @@ import json
 import yagmail
 import random
 
-from api_templates.templates import SignUp, LogIN
-from helpers.helper import scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, get_resp, add_to_user_product_hist, get_resp_sf, generate_prompt_summary, send_otp_mail
+from api_templates.templates import SignUp, LogIN, chatTemp
+from helpers.helper import scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, get_resp, add_to_user_product_hist, send_otp_mail, add_to_user_chat_hist
 
 ## Load environment variables from .env file
 load_dotenv()
@@ -155,7 +155,7 @@ async def upload_barcode(file: UploadFile = File(...), id: str = Form(...)):
     else:
         raise HTTPException(status_code=404, detail="No barcode detected")
     
-    return {"product_id": extracted_barcode.lstrip('0')}
+    return {"product_barcode": extracted_barcode.lstrip('0')}
 
 ## Define endpoint for retrieving product details
 @app.post(f"{prefix}/get-product")
@@ -202,9 +202,11 @@ async def get_product_summary(bar_code: str = Form(...)):
             raise HTTPException(status_code=400, detail=summary_txt)
 
         return {
-            "product_name" : name,
-            "product_summary": summ_cont,
-            "image_url" : "soon"
+            "product": {
+                "product_name" : name,
+                "product_summary": summ_cont,
+                "image_url" : "soon"
+            }
         }
     else:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -258,3 +260,36 @@ def get_user_history(ID: str = Form(...), barcode: str = Form(...)):
         return chat_h
     except:
         HTTPException(status_code=404, detail="User history not found")
+
+## Define endpoint chatting
+@app.post(f"{prefix}/chat")
+def chat_with_model(payload : chatTemp):
+    sys_msg = get_sys_msgs(payload.product_full_details)
+
+    try:
+
+        model_resp = get_resp(sys_msg, text= payload.user_message, token= OAI_KEY_TOKEN)
+
+    except Exception as e:
+        raise HTTPException(status_code=405, detail="Error in getting summary with OAI wrapper")
+
+    try:
+        response = model_resp["response"]["messages"][0]["content"]
+
+    except:
+        raise HTTPException(status_code=400, detail=model_resp)
+    
+    conv = {
+        "user_message" : payload.user_message,
+        "model_resp": response
+    }
+
+    try:
+        add_to_user_chat_hist(conv, user_id=payload.userID, prod_id = payload.prod_id, uh_client=usersHistoryClient)
+    except:
+        raise HTTPException(status_code=400, detail="Error adding conversation to history")
+    return {
+        "user_message" : payload.user_message,
+        "model_resp": response
+    }
+
