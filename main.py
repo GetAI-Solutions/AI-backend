@@ -20,6 +20,7 @@ OAI_KEY = os.getenv("OAI_KEY", "local")
 DATABASE_URI = os.getenv("DATABASE_URI", "local")
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
 g_app_password = os.getenv("G_APP_PASSWORD")
+OAI_KEY_TOKEN = os.getenv("OAI_KEY_TOKEN", "local")
 
 ## Initialize MongoDB client and databases
 DBClient = pymongo.MongoClient(DATABASE_URI)
@@ -164,7 +165,10 @@ async def get_product(bar_code: str = Form(...), user_id: str = Form(...)):
     except:
         raise HTTPException(status_code=402, detail="Error with DB")
     if product:
-        add_to_user_product_hist(id, user_id, usersHistoryClient)
+        try:
+            add_to_user_product_hist(id, user_id, usersHistoryClient)
+        except:
+            raise HTTPException(status_code=400, detail = "user not found!")
         return {
             "_id": str(product["_id"]),
             "product_code": product["product_code"],
@@ -183,18 +187,24 @@ async def get_product_summary(bar_code: str = Form(...)):
         raise HTTPException(status_code=402, detail="Error with DB")
     if product:
         details = product["details"]
-        #sys_msg_summary = get_sys_msgs_summary(details)
+        name = product["product_name"]
 
-        #summary_txt = get_resp(client, sys_msg_summary, "", summary=True)
+        sys_msg_summary = get_sys_msgs_summary(details)
+        
+        try:
+            summary_txt = get_resp(sys_msg_summary, token= OAI_KEY_TOKEN)
+        except Exception as e:
+            raise HTTPException(status_code=405, detail="Error in getting summary with OAI wrapper")
 
-        sys_msg = generate_prompt_summary(details)
-
-        summary_txt = get_resp_sf(sys_msg, text = "")
-
-        #print(summary_txt)
+        try:
+            summ_cont = summary_txt["response"]["messages"][0]["content"]
+        except:
+            raise HTTPException(status_code=400, detail=summary_txt)
 
         return {
-            "product_summary": summary_txt
+            "product_name" : name,
+            "product_summary": summ_cont,
+            "image_url" : "soon"
         }
     else:
         raise HTTPException(status_code=404, detail="Product not found")

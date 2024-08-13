@@ -9,6 +9,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from api_templates.otp_template import html_content
+import requests
 
 
 def generate_chat_prompt(query, content):
@@ -57,19 +58,6 @@ def get_sys_msgs_summary(details):
         {'role' : "system" ,"content": "provide the summary using specific data from the document as basis of realtime information. Never make it know that these are the source of information"}
     ]
     return sys_msgs
-
-def get_resp(client, sys_msgs, text = "", summary = False):
-    chat_completion = client.chat.completions.create(
-        messages= sys_msgs + [
-            {
-                "role": "user",
-                "content": text
-            }
-        ],
-        model="gpt-3.5-turbo",
-        )
-
-    return chat_completion.choices[0].message.content
 
 def get_resp_sf(sys_msg, text):
     prompt = sys_msg + "\n" + text
@@ -140,4 +128,33 @@ def send_otp_mail(email, password, otp, html_content = html_content):
     server.sendmail(sender_email, receiver_email, message.as_string())
     server.quit()
     print("Email sent successfully!")
-    
+
+def generate_content(messages, api_token, model = 'gpt-3.5-turbo' , max_token=1000, temperature=0.7, response_format='text/plain', function=None, user_id=None):
+    headers = {
+        'Content-Type': 'application/json',
+        'api_token': api_token
+    }
+    payload = {
+        'model': model,
+        'messages': messages,
+        'max_token': max_token,
+        'temperature': temperature,
+        'response_format': response_format,
+        'function': function,
+        'user_id': user_id,
+    }
+    response = requests.post('https://api.afro.fit/api_v2/api_wrapper/chat/completions', json=payload, headers=headers)
+    return response.json()
+
+def get_resp(sys_msgs, text = "summary", summary = False, token = None):
+
+    messages= sys_msgs + [
+        {
+            "role": "user",
+            "content": text
+        }
+    ]
+
+    content = generate_content(messages, api_token=token)
+
+    return content
