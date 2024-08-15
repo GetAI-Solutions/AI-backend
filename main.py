@@ -9,8 +9,9 @@ import pymongo
 import json
 import yagmail
 import random
+from bson.objectid import ObjectId
 
-from api_templates.templates import SignUp, LogIN, chatTemp
+from api_templates.templates import SignUp, LogIN, chatTemp, language_code
 from helpers.helper import scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, get_resp, add_to_user_product_hist, send_otp_mail, add_to_user_chat_hist
 
 ## Load environment variables from .env file
@@ -28,6 +29,8 @@ dbClient = DBClient["getAIDB"]
 usersClient = dbClient["users"]
 productsClient = dbClient["products"]
 usersHistoryClient = dbClient["user_history"]
+userFeedbackClient = dbClient["user_feedback"]
+noProductClient = dbClient["product_not_found"]
 
 ## Initialize OpenAI client
 client = OpenAI(api_key=OAI_KEY)
@@ -166,33 +169,42 @@ async def get_product(bar_code: str = Form(...), user_id: str = Form(...)):
         raise HTTPException(status_code=402, detail="Error with DB")
     if product:
         try:
-            add_to_user_product_hist(id, user_id, usersHistoryClient)
-        except:
+            add_to_user_product_hist(prod_code=bar_code, user_id=str(user_id), uh_client=usersHistoryClient)
+        except Exception as e:
+            print(str(e))
             raise HTTPException(status_code=400, detail = "user not found!")
         return {
             "_id": str(product["_id"]),
             "product_code": product["product_code"],
             "product_name": product["product_name"],
-            "product_details": product["details"]
+            "product_details": product["product_details"]
         }
     else:
         raise HTTPException(status_code=404, detail="Product not found")
 
 ## Define endpoint for retrieving product summary
 @app.post(f"{prefix}/get-product-summary")
-async def get_product_summary(bar_code: str = Form(...)):
+async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)):
     try:
         product = productsClient.find_one({"product_code": int(bar_code)})
     except:
         raise HTTPException(status_code=402, detail="Error with DB")
+    
+    try:
+        user_pref_language = usersClient.find_one({"_id":ObjectId(userID)})["preferred_language"]
+        user_pref_language = language_code[user_pref_language.lower()]
+    except:
+        raise HTTPException(status_code="400", detail="user not found")
+    
+
     if product:
-        details = product["details"]
+        details = product["product_details"]
         name = product["product_name"]
 
         sys_msg_summary = get_sys_msgs_summary(details)
         
         try:
-            summary_txt = get_resp(sys_msg_summary, token= OAI_KEY_TOKEN)
+            summary_txt = get_resp(sys_msg_summary, pref_lang= user_pref_language, token= OAI_KEY_TOKEN)
         except Exception as e:
             raise HTTPException(status_code=405, detail="Error in getting summary with OAI wrapper")
 
@@ -247,31 +259,53 @@ async def add_product(file: UploadFile = File(...), product_code: str = Form(...
 def get_user_history(ID: str = Form(...)):
     try:
         u_h = usersHistoryClient.find_one({"uid": ID})
-        return {'product_history': u_h["product_history"]}
     except:
-        HTTPException(status_code=404, detail="User history not found")
+        raise HTTPException(status_code=404, detail="User history not found")
+    
+    if u_h:
+        return {'product_history': u_h["product_history"]}
 
 ## Define endpoint for retrieving user chat history
 @app.post(f"{prefix}/get-user-chat-history")
-def get_user_history(ID: str = Form(...), barcode: str = Form(...)):
+def get_user_history(userID: str = Form(...), barcode: str = Form(...)):
     try:
-        u_h = usersHistoryClient.find_one({"uid": ID})
-        chat_h = u_h["chat_history"][ID]
-        return chat_h
+        u_h = usersHistoryClient.find_one({"uid": userID})
     except:
-        HTTPException(status_code=404, detail="User history not found")
+        raise HTTPException(status_code=404, detail="User history not found")
+    
+    if u_h:
+        if barcode in u_h["chat_history"]:
+
+            return  {"chat_history" : u_h["chat_history"][barcode]}
+        else:
+            return {
+                "chat_history" : []
+            }
+    else:
+        raise HTTPException(status_code=404, detail="User history not found")
 
 ## Define endpoint chatting
 @app.post(f"{prefix}/chat")
 def chat_with_model(payload : chatTemp):
-    sys_msg = get_sys_msgs(payload.product_full_details)
+    try:
+        product = productsClient.find_one({"product_code": int(payload.bar_code)})
+    except:
+        raise HTTPException(status_code="400", detail="product not found")
+    
+    try:
+        user_pref_language = usersClient.find_one({"_id":ObjectId(payload.userID)})["preferred_language"]
+        user_pref_language = language_code[user_pref_language.lower()]
+    except:
+        raise HTTPException(status_code="400", detail="user not found")
+
+    sys_msg = get_sys_msgs(product["product_details"])
 
     try:
 
-        model_resp = get_resp(sys_msg, text= payload.user_message, token= OAI_KEY_TOKEN)
+        model_resp = get_resp(sys_msg, text= payload.user_message, pref_lang= user_pref_language, token= OAI_KEY_TOKEN)
 
     except Exception as e:
-        raise HTTPException(status_code=405, detail="Error in getting summary with OAI wrapper")
+        raise HTTPException(status_code=405, detail="Error in getting response with OAI wrapper")
 
     try:
         response = model_resp["response"]["messages"][0]["content"]
@@ -285,11 +319,68 @@ def chat_with_model(payload : chatTemp):
     }
 
     try:
-        add_to_user_chat_hist(conv, user_id=payload.userID, prod_id = payload.prod_id, uh_client=usersHistoryClient)
-    except:
+        add_to_user_chat_hist(conv, user_id=payload.userID, prod_id = payload.bar_code, uh_client=usersHistoryClient)
+    except Exception as e:
+        print(str(e))
         raise HTTPException(status_code=400, detail="Error adding conversation to history")
     return {
         "user_message" : payload.user_message,
         "model_resp": response
     }
+
+## Define endpoint to update user preferred language
+@app.patch(f"{prefix}/update-preferred-language")
+def update_preferred_language(userID:str = Form(...), preferred_language: str = Form(...)):
+    if preferred_language.lower() not in language_code.keys():
+        raise HTTPException(status_code=400, detail="Preferred language must be one of [EN, FR, SW]")
+    else:
+
+        try:
+            user_det = usersClient.find_one({"_id":ObjectId(userID)})
+        except:
+            raise HTTPException(status_code=400, detail="user not found") 
+        
+        #print(user_det)
+        
+        if user_det:
+            try:
+                usersClient.find_one_and_update({"_id":ObjectId(userID)}, {"$set" : {"preferred_language" : preferred_language.lower()}})
+            except:
+                raise HTTPException(status_code=400, detail="Error with Db in updating language preference")
+            
+            return {
+                "message" : "Language preference update success"
+            }
+        else:
+            raise HTTPException(status_code=400, detail="user not found") 
+
+
+@app.get(f"{prefix}/get-all-products")
+def get_all_products():
+    try:
+        all_products = productsClient.find()
+    except:
+        raise HTTPException(status_code=400, detail="Error with db")
+    
+    if all_products:
+        products_l = [p["product_code"] for p in all_products]
+        no_of_products = len(products_l)
+
+        return {
+            "Number of products" : no_of_products,
+            "all_barcodes" : products_l
+        }
+
+@app.post(f"{prefix}/give-user-feedback")
+def give_user_feedback(userID:str = Form(...), feedback:str = Form(...)):
+    try:
+        userFeedbackClient.insert_one({"uid" : userID,
+                                       "feedback" : feedback})
+    except:
+        raise HTTPException(status_code=400, detail= "Error with db in adding feedback")
+    
+    return {
+        "response" : "feedback succesfully added"
+    }
+
 
