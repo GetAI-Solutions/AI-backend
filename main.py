@@ -199,7 +199,9 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
             print(str(e))
             raise HTTPException(status_code=400, detail = "user not found!")
         details = product["product_details"]
+
         name = product["product_name"]
+        barcode = product["product_code"]
 
         sys_msg_summary = get_sys_msgs_summary(details)
         
@@ -215,6 +217,7 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
 
         return {
             "product": {
+                "product_barcode" : barcode,
                 "product_name" : name,
                 "product_summary": summ_cont,
                 "image_url" : "soon"
