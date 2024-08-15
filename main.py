@@ -189,7 +189,7 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
         user_pref_language = usersClient.find_one({"_id":ObjectId(userID)})["preferred_language"]
         user_pref_language = language_code[user_pref_language.lower()]
     except:
-        raise HTTPException(status_code="400", detail="user not found")
+        raise HTTPException(status_code=400, detail="user not found")
     
 
     if product:
@@ -300,13 +300,13 @@ def chat_with_model(payload : chatTemp):
     try:
         product = productsClient.find_one({"product_code": int(payload.bar_code)})
     except:
-        raise HTTPException(status_code="400", detail="product not found")
+        raise HTTPException(status_code=400, detail="product not found")
     
     try:
         user_pref_language = usersClient.find_one({"_id":ObjectId(payload.userID)})["preferred_language"]
         user_pref_language = language_code[user_pref_language.lower()]
     except:
-        raise HTTPException(status_code="400", detail="user not found")
+        raise HTTPException(status_code=400, detail="user not found")
 
     sys_msg = get_sys_msgs(product["product_details"])
 
