@@ -148,7 +148,7 @@ async def login(payload: LogIN):
 
 ## Define endpoint for uploading a barcode image
 @app.post(f"{prefix}/upload-barcode")
-async def upload_barcode(file: UploadFile = File(...), id: str = Form(...)):
+async def upload_barcode(file: UploadFile = File(...)):
     file_contents = await file.read()
     img = BytesIO(file_contents)
     pi_img = Image.open(img)
@@ -168,11 +168,6 @@ async def get_product(bar_code: str = Form(...), user_id: str = Form(...)):
     except:
         raise HTTPException(status_code=402, detail="Error with DB")
     if product:
-        try:
-            add_to_user_product_hist(prod_code=bar_code, user_id=str(user_id), uh_client=usersHistoryClient)
-        except Exception as e:
-            print(str(e))
-            raise HTTPException(status_code=400, detail = "user not found!")
         return {
             "_id": str(product["_id"]),
             "product_code": product["product_code"],
@@ -187,8 +182,8 @@ async def get_product(bar_code: str = Form(...), user_id: str = Form(...)):
 async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)):
     try:
         product = productsClient.find_one({"product_code": int(bar_code)})
-    except:
-        raise HTTPException(status_code=402, detail="Error with DB")
+    except Exception as e:
+        raise HTTPException(status_code=402, detail="Error with DB in finding product \n" + str(e) )
     
     try:
         user_pref_language = usersClient.find_one({"_id":ObjectId(userID)})["preferred_language"]
@@ -198,6 +193,11 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
     
 
     if product:
+        try:
+            add_to_user_product_hist(prod_code=bar_code, user_id=str(userID), uh_client=usersHistoryClient)
+        except Exception as e:
+            print(str(e))
+            raise HTTPException(status_code=400, detail = "user not found!")
         details = product["product_details"]
         name = product["product_name"]
 
@@ -221,6 +221,13 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
             }
         }
     else:
+        try:
+            noProductClient.insert_one({
+                "product_code" : bar_code
+            })
+        except Exception as e:
+            print(str(e))
+
         raise HTTPException(status_code=404, detail="Product not found")
 
 ## Define endpoint for adding a new product
@@ -359,6 +366,22 @@ def update_preferred_language(userID:str = Form(...), preferred_language: str = 
 def get_all_products():
     try:
         all_products = productsClient.find()
+    except:
+        raise HTTPException(status_code=400, detail="Error with db")
+    
+    if all_products:
+        products_l = [p["product_code"] for p in all_products]
+        no_of_products = len(products_l)
+
+        return {
+            "Number of products" : no_of_products,
+            "all_barcodes" : products_l
+        }
+
+@app.get(f"{prefix}/get-barcode-not-in-db")
+def get_codes_not_in_db():
+    try:
+        all_products = noProductClient.find()
     except:
         raise HTTPException(status_code=400, detail="Error with db")
     
