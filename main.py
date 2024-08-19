@@ -246,8 +246,8 @@ async def add_product(file: UploadFile = File(...), product_code: str = Form(...
     if len(prod_details) > 10:
         try:
             existingdetails = productsClient.find_one({'product_code' : int(product_code)})
-        except:
-            raise HTTPException(status_code=400, detail="Product could not be added, try again")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Product could not be added, pls try again - reason - {str(e)}")
         if existingdetails:
             raise HTTPException(status_code=400, detail="Product already in DB, try another product")
         else:
@@ -259,8 +259,8 @@ async def add_product(file: UploadFile = File(...), product_code: str = Form(...
                 }
                 productsClient.insert_one(dets)
                 return {"msg": "Product added"}
-            except:
-                raise HTTPException(status_code=400, detail="Product could not be added, try again")
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Product could not be added, pls try again - reason - {str(e)}")
     else:
         raise HTTPException(status_code=400, detail="Product details too short")
 
@@ -373,7 +373,8 @@ def get_all_products():
         raise HTTPException(status_code=400, detail="Error with db")
     
     if all_products:
-        products_l = [p["product_code"] for p in all_products]
+
+        products_l = {p["product_code"] : p["product_name"] for p in all_products} 
         no_of_products = len(products_l)
 
         return {
@@ -398,9 +399,10 @@ def get_codes_not_in_db():
         }
 
 @app.post(f"{prefix}/give-user-feedback")
-def give_user_feedback(userID:str = Form(...), feedback:str = Form(...)):
+def give_user_feedback(userID:str = Form(...), feedback:str = Form(...), product_name:str = None):
     try:
         userFeedbackClient.insert_one({"uid" : userID,
+                                       "product_name": product_name,
                                        "feedback" : feedback})
     except:
         raise HTTPException(status_code=400, detail= "Error with db in adding feedback")

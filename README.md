@@ -1,160 +1,77 @@
-# get-ai Backend README
+# get-ai API Service
 
-## Overview
-
-This project provides the backend for the `get-ai` service, a FastAPI-based application that facilitates user interactions with AI-powered services. The backend includes user authentication, product management, and barcode scanning functionalities, integrated with MongoDB for data storage.
+This project provides a RESTful API using FastAPI to support the get-ai service. The service includes various endpoints for user management, product barcode scanning, product details retrieval, and AI-driven chat interactions.
 
 ## Features
 
-- **User Authentication:** Supports user signup and login with email or phone number.
-- **OTP Sending:** Generates and sends OTPs via email for verification.
-- **Product Management:** Allows uploading, retrieving, and summarizing product details based on barcode data.
-- **User History Management:** Tracks user product history and chat interactions.
-- **Barcode Scanning:** Extracts barcode data from images.
+- **User Management**: Supports user sign-up, login, and OTP-based authentication.
+- **Product Barcode Scanning**: Users can upload images of barcodes, and the API extracts the barcode value.
+- **Product Information Retrieval**: Allows users to retrieve detailed information and summaries for products based on scanned barcodes.
+- **User History Tracking**: Tracks user product history and chat history associated with each product.
+- **AI-Powered Chat**: Provides a chat interface where users can ask questions about products, and responses are generated using AI models in their preferred language.
+- **Feedback System**: Allows users to submit feedback on products.
+- **Product Management**: Includes endpoints for adding new products and retrieving product details from the database.
 
 ## Technologies Used
 
-- **Python**: The primary programming language.
-- **FastAPI**: Web framework for building APIs.
-- **MongoDB**: NoSQL database for storing user and product data.
-- **PIL**: Python Imaging Library for image processing.
-- **OpenAI API**: For generating AI-driven responses and summaries.
-- **Yagmail**: For sending emails with OTPs.
-- **CORS Middleware**: To handle Cross-Origin Resource Sharing.
+- **FastAPI**: Web framework for building the API.
+- **MongoDB**: Used for user data, product data, and history storage.
+- **OpenAI API**: Integrated for generating AI responses.
+- **PIL**: Used for handling images, specifically barcode scanning.
+- **Yagmail**: For sending OTP emails.
+- **Environment Variables**: Managed using `python-dotenv`.
 
-## Project Structure
+## Endpoints Overview
 
-```plaintext
-.
-├── api_templates/
-│   └── templates.py          # Data models for API requests
-├── helpers/
-│   └── helper.py             # Helper functions for barcode scanning, AI response, etc.
-├── main.py                   # Main application code (provided above)
-├── .env                      # Environment variables (not included in version control)
-└── README.md                 # This file
-```
+1. **User Management**
+   - `POST /signup`: Register a new user.
+   - `POST /send-otp`: Send OTP to the user’s email.
+   - `POST /login`: Log in with email or phone number.
 
-## Installation
+2. **Product Management**
+   - `POST /upload-barcode`: Upload a barcode image to extract and decode the barcode.
+   - `POST /get-product`: Retrieve product details using the barcode.
+   - `POST /get-product-summary`: Get a summary of the product’s information.
+   - `POST /add-product`: Add a new product to the database.
+   - `GET /get-all-products`: Get a list of all products in the database.
+   - `GET /get-barcode-not-in-db`: Retrieve barcodes that do not have product information in the database.
 
-1. **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-repo/get-ai-backend.git
-    cd get-ai-backend
-    ```
+3. **User History**
+   - `POST /get-user-product-history`: Retrieve the user’s product search history.
+   - `POST /get-user-chat-history`: Retrieve the user’s chat history associated with a specific product.
 
-2. **Create a virtual environment and activate it:**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
+4. **AI-Powered Chat**
+   - `POST /chat`: Interact with the AI model for product-related queries.
 
-3. **Install the required dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+5. **User Feedback**
+   - `POST /give-user-feedback`: Submit feedback for a product.
 
-4. **Set up environment variables:**
-    - Create a `.env` file in the root directory.
-    - Add the following environment variables:
+6. **User Preferences**
+   - `PATCH /update-preferred-language`: Update the user’s preferred language (supports EN, FR, SW).
 
-    ```plaintext
-    APP_ENV=local
-    OAI_KEY=your_openai_api_key
-    DATABASE_URI=your_mongodb_connection_string
-    REPLICATE_API_TOKEN=your_replicate_api_token
-    G_APP_PASSWORD=your_email_app_password
-    ```
+## Environment Setup
 
-## Running the Application
+1. **Install Dependencies**:
+   ```
+   pip install -r requirements.txt
+   ```
 
-Start the FastAPI application:
+2. **Set Up Environment Variables**:
+   Use a `.env` file to manage environment variables:
+   ```
+   APP_ENV=local
+   OAI_KEY=your_openai_key
+   DATABASE_URI=your_mongo_db_uri
+   REPLICATE_API_TOKEN=your_replicate_token
+   G_APP_PASSWORD=your_email_app_password
+   ```
 
-```bash
-uvicorn main:app --reload
-```
+3. **Run the Application**:
+   ```
+   uvicorn main:app --reload
+   ```
 
-This will start the server locally, accessible at `http://127.0.0.1:8000`. The documentation will be available at `http://127.0.0.1:8000/get-ai/dev/documentation`.
+## How to Use
 
-## API Endpoints
-
-### **Root Endpoint**
-
-- **`GET /get-ai/`**
-  - Returns a welcome message.
-
-### **User Signup**
-
-- **`POST /get-ai/signup`**
-  - Signs up a new user.
-  - **Payload:** `SignUp` (email, password, etc.)
-
-### **Send OTP**
-
-- **`POST /get-ai/send-otp`**
-  - Sends an OTP to the user's email.
-  - **Form:** `email`
-
-### **User Login**
-
-- **`POST /get-ai/login`**
-  - Logs in an existing user.
-  - **Payload:** `LogIN` (email or phone number, password)
-
-### **Upload Barcode Image**
-
-- **`POST /get-ai/upload-barcode`**
-  - Uploads an image containing a barcode and extracts the barcode data.
-  - **Form:** `file`, `id`
-
-### **Get Product Details**
-
-- **`POST /get-ai/get-product`**
-  - Retrieves product details based on a barcode.
-  - **Form:** `bar_code`, `user_id`
-
-### **Get Product Summary**
-
-- **`POST /get-ai/get-product-summary`**
-  - Retrieves an AI-generated summary of the product details.
-  - **Form:** `bar_code`
-
-### **Add New Product**
-
-- **`POST /get-ai/add-product`**
-  - Adds a new product to the database.
-  - **Form:** `file`, `product_code`, `product_name`
-
-### **Get User Product History**
-
-- **`POST /get-ai/get-user-product-history`**
-  - Retrieves the product history for a specific user.
-  - **Form:** `ID`
-
-### **Get User Chat History**
-
-- **`POST /get-ai/get-user-chat-history`**
-  - Retrieves the chat history for a specific user and product.
-  - **Form:** `ID`, `barcode`
-
-## Environment Variables
-
-- **`APP_ENV`**: Defines the environment the app is running in (e.g., `local`, `production`).
-- **`OAI_KEY`**: API key for OpenAI.
-- **`DATABASE_URI`**: MongoDB connection string.
-- **`REPLICATE_API_TOKEN`**: Token for image processing service.
-- **`G_APP_PASSWORD`**: App password for sending emails via Gmail.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for more details.
-
-## Contributing
-
-Contributions are welcome! Please submit a pull request or open an issue for any improvements or bug fixes.
-
----
-
-
-# To run locally
-uvicorn --host 0.0.0.0 --port 4500 --reload main:app
+- Access the API documentation at `/get-ai/dev/documentation` for local development or at `/get-ai-service/dev/documentation` for production.
+- Test various endpoints using the interactive Swagger UI available in the documentation.
