@@ -203,12 +203,12 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
         name = product["product_name"]
         barcode = product["product_code"]
 
-        sys_msg_summary = get_sys_msgs_summary(details)
+        sys_msg_summary = get_sys_msgs_summary(details, pref_lang=user_pref_language)
         
         try:
-            summary_txt = get_resp(sys_msg_summary, pref_lang= user_pref_language, token= OAI_KEY_TOKEN)
+            summary_txt = get_resp(sys_msg_summary, token= OAI_KEY_TOKEN)
         except Exception as e:
-            raise HTTPException(status_code=405, detail="Error in getting summary with OAI wrapper")
+            raise HTTPException(status_code=405, detail="Error in getting summary with OAI wrapper" + str(e))
 
         try:
             summ_cont = summary_txt["response"]["messages"][0]["content"]
@@ -308,11 +308,11 @@ def chat_with_model(payload : chatTemp):
     except:
         raise HTTPException(status_code=400, detail="user not found")
 
-    sys_msg = get_sys_msgs(product["product_details"])
+    sys_msg = get_sys_msgs(product["product_details"], pref_lang=user_pref_language)
 
     try:
 
-        model_resp = get_resp(sys_msg, text= payload.user_message, pref_lang= user_pref_language, token= OAI_KEY_TOKEN)
+        model_resp = get_resp(sys_msg, text= payload.user_message, token= OAI_KEY_TOKEN)
 
     except Exception as e:
         raise HTTPException(status_code=405, detail="Error in getting response with OAI wrapper")
