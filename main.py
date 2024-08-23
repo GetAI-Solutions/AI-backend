@@ -485,7 +485,7 @@ async def add_img_to_product(file: UploadFile = File(...), bar_code: str = Form(
     if details:
         p_db_id = str(details["_id"])
         try:
-            blob = load_blob(contclient, p_db_id)
+            blob = load_blob(contclient, p_db_id + ".png")
             file_contents = await file.read()
             img = BytesIO(file_contents)
             blob.upload_blob(img, overwrite = True)
@@ -499,7 +499,7 @@ async def add_img_to_product(file: UploadFile = File(...), bar_code: str = Form(
             raise HTTPException(status_code=400, detail="Error with Db in updating language preference")
     
     return {
-        "response" : details
+        "response" : "Image Added"
     }
 
 
