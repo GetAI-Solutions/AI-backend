@@ -212,6 +212,12 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
         name = product["product_name"]
         barcode = product["product_code"]
 
+        img_url = ""
+
+        if "img_url" in product:
+            img_url = product["img_url"]
+         
+
         sys_msg_summary = get_sys_msgs_summary(details, pref_lang=user_pref_language)
         
         try:
@@ -229,7 +235,7 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
                 "product_barcode" : barcode,
                 "product_name" : name,
                 "product_summary": summ_cont,
-                "image_url" : "soon"
+                "image_url" : img_url
             }
         }
     else:
