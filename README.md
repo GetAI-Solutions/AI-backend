@@ -27,6 +27,7 @@ This project provides a RESTful API using FastAPI to support the get-ai service.
    - `POST /signup`: Register a new user.
    - `POST /send-otp`: Send OTP to the user’s email.
    - `POST /login`: Log in with email or phone number.
+   - `PATCH / reset-password`: Reset password
 
 2. **Product Management**
    - `POST /upload-barcode`: Upload a barcode image to extract and decode the barcode.
