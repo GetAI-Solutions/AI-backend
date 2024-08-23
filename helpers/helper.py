@@ -11,6 +11,8 @@ from email.mime.text import MIMEText
 from api_templates.otp_template import html_content
 import requests
 import json
+from azure.storage.blob import BlobServiceClient
+
 
 def generate_chat_prompt(query, content):
     template = f"""
@@ -183,17 +185,54 @@ def get_resp(sys_msgs, text = "summary", token = None):
 
     return content
 
-def search_product_on_web(prod_name):
-    url = "https://google.serper.dev/search"
+def load_cont(container_name, blob_conn_str):
+    blob_service_client = BlobServiceClient.from_connection_string(blob_conn_str)
+    container_client = blob_service_client.get_container_client(container_name)
+    if not container_client.exists():
+        container_client = container_client.create_container()
+        container_client = blob_service_client.get_container_client(container_name)
+    return container_client
 
-    payload = json.dumps({
-    "q": "prod_name"
-    })
+def load_blob(container_client, blob_name):
+    blob_client = container_client.get_blob_client(blob_name)
+    return blob_client
+
+def save_image(image_buffer,cont_client, prod_id):
+    blob_client = load_blob(cont_client, blob_name=prod_id)
+    with open("my_file.txt", "rb") as f:
+        res = blob_client.upload_blob(f, overwrite=True)
+
+def get_details_from_url(product_name, auth_token, url = "https://api.perplexity.ai/chat/completions"):
+    payload = {
+    "model": "llama-3.1-sonar-small-128k-online",
+    "messages": [
+        {
+            "content": "string",
+            "role": "system"
+        },
+        {
+            "content":f" Please give me details about the following prouct - {product_name}",
+            "role": "user"
+        }
+    ],
+    "max_tokens": 0,
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "return_citations": False,
+    "return_images": False,
+    "return_related_questions": False,
+    "top_k": 0,
+    "stream": False,
+    "presence_penalty": 0,
+    "frequency_penalty": 1
+    }
     headers = {
-    'X-API-KEY': '29f3670e7a3f72e5272303466806cb3db5b3ba56',
-    'Content-Type': 'application/json'
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Bearer {auth_token}"
+
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.post(url, json=payload, headers=headers)
 
-    print(response.text)
+    return response.json()["choices"][0]["message"]["content"]

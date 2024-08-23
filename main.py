@@ -12,7 +12,9 @@ import random
 from bson.objectid import ObjectId
 
 from api_templates.templates import SignUp, LogIN, chatTemp, language_code
-from helpers.helper import scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, get_resp, add_to_user_product_hist, send_otp_mail, add_to_user_chat_hist
+from helpers.helper import (scan_barcode_from_image, get_sys_msgs, get_sys_msgs_summary, 
+                            get_resp, add_to_user_product_hist, send_otp_mail, add_to_user_chat_hist,
+                            get_details_from_url, load_cont, load_blob)
 
 ## Load environment variables from .env file
 load_dotenv()
@@ -22,6 +24,9 @@ DATABASE_URI = os.getenv("DATABASE_URI", "local")
 os.environ["REPLICATE_API_TOKEN"] = os.getenv("REPLICATE_API_TOKEN")
 g_app_password = os.getenv("G_APP_PASSWORD")
 OAI_KEY_TOKEN = os.getenv("OAI_KEY_TOKEN", "local")
+blob_conn_str = os.getenv("BLOLB_CONNECTION_STRING")
+Perplexity_KEY = os.getenv("PERPLEXAI_KEY")
+CONT_NAME = os.getenv("CONT_NAME")
 
 ## Initialize MongoDB client and databases
 DBClient = pymongo.MongoClient(DATABASE_URI)
@@ -31,9 +36,13 @@ productsClient = dbClient["products"]
 usersHistoryClient = dbClient["user_history"]
 userFeedbackClient = dbClient["user_feedback"]
 noProductClient = dbClient["product_not_found"]
+alternative_details = dbClient["details_sourced_from_alternatives"]
 
 ## Initialize OpenAI client
 client = OpenAI(api_key=OAI_KEY)
+
+## Initialize Azure cntainer client
+contclient = load_cont(CONT_NAME, blob_conn_str=blob_conn_str)
 
 ## Define API prefix based on environment
 if appENV != "local":
@@ -266,7 +275,7 @@ async def add_product(file: UploadFile = File(...), product_code: str = Form(...
 
 ## Define endpoint for retrieving user product history
 @app.post(f"{prefix}/get-user-product-history")
-def get_user_history(ID: str = Form(...)):
+async def get_user_history(ID: str = Form(...)):
     try:
         u_h = usersHistoryClient.find_one({"uid": ID})
     except:
@@ -277,7 +286,7 @@ def get_user_history(ID: str = Form(...)):
 
 ## Define endpoint for retrieving user chat history
 @app.post(f"{prefix}/get-user-chat-history")
-def get_user_history(userID: str = Form(...), barcode: str = Form(...)):
+async def get_user_history(userID: str = Form(...), barcode: str = Form(...)):
     try:
         u_h = usersHistoryClient.find_one({"uid": userID})
     except:
@@ -296,7 +305,7 @@ def get_user_history(userID: str = Form(...), barcode: str = Form(...)):
 
 ## Define endpoint chatting
 @app.post(f"{prefix}/chat")
-def chat_with_model(payload : chatTemp):
+async def chat_with_model(payload : chatTemp):
     try:
         product = productsClient.find_one({"product_code": int(payload.bar_code)})
     except:
@@ -340,7 +349,7 @@ def chat_with_model(payload : chatTemp):
 
 ## Define endpoint to update user preferred language
 @app.patch(f"{prefix}/update-preferred-language")
-def update_preferred_language(userID:str = Form(...), preferred_language: str = Form(...)):
+async def update_preferred_language(userID:str = Form(...), preferred_language: str = Form(...)):
     if preferred_language.lower() not in language_code.keys():
         raise HTTPException(status_code=400, detail="Preferred language must be one of [EN, FR, SW]")
     else:
@@ -366,7 +375,7 @@ def update_preferred_language(userID:str = Form(...), preferred_language: str = 
 
 
 @app.get(f"{prefix}/get-all-products")
-def get_all_products():
+async def get_all_products():
     try:
         all_products = productsClient.find()
     except:
@@ -383,7 +392,7 @@ def get_all_products():
         }
 
 @app.get(f"{prefix}/get-barcode-not-in-db")
-def get_codes_not_in_db():
+async def get_codes_not_in_db():
     try:
         all_products = noProductClient.find()
     except:
@@ -399,7 +408,7 @@ def get_codes_not_in_db():
         }
 
 @app.post(f"{prefix}/give-user-feedback")
-def give_user_feedback(userID:str = Form(...), feedback:str = Form(...), product_name:str = None):
+async def give_user_feedback(userID:str = Form(...), feedback:str = Form(...), product_name:str = None):
     try:
         userFeedbackClient.insert_one({"uid" : userID,
                                        "product_name": product_name,
@@ -410,5 +419,67 @@ def give_user_feedback(userID:str = Form(...), feedback:str = Form(...), product
     return {
         "response" : "feedback succesfully added"
     }
+
+@app.post(f"{prefix}/get-details-from-perplexity")
+async def get_details_from_perplexity(product_name:str = Form(...), bar_code: str = Form(...)):
+    try:
+        details = get_details_from_url(product_name=product_name, auth_token = Perplexity_KEY)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail= "Error getting details from perplexity" + str(e))
+    
+    try:
+        alternative_details.insert_one({
+            "product_name" : product_name,
+            "product_code" : bar_code,
+            "product_details" : details
+        })
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail= "Error getting details from perplexity" + str(e))
+    
+    return {
+        "response" : details
+    }
+
+@app.get(f"{prefix}/show-products-without-images")
+async def show_no_img_products():
+    try:
+        all_products = productsClient.find()
+    except:
+        raise HTTPException(status_code=400, detail="Error with db")
+    
+    if all_products:
+        products_l = {p["product_code"] : p["product_name"] for p in all_products if "img_url" not in p}
+        return products_l
+    else:
+        raise HTTPException(status_code=400, detail="No product in db")
+
+
+@app.post(f"{prefix}/add-picture-to-product")
+async def add_img_to_product(file: UploadFile = File(...), bar_code: str = Form(...)):
+    try:
+        details = productsClient.find_one({'product_code' : int(bar_code)})
+    except Exception as e:
+        raise HTTPException(status_code=400, detail= "Error getting product from DB" + str(e))
+    if details:
+        p_db_id = str(details["_id"])
+        try:
+            blob = load_blob(contclient, p_db_id)
+            file_contents = await file.read()
+            img = BytesIO(file_contents)
+            blob.upload_blob(img, overwrite = True)
+            blob_url = blob.url
+        except Exception as e:
+            raise HTTPException(status_code=400, detail= "Error getting details from perplexity" + str(e))
+        
+        try:
+            productsClient.find_one_and_update({"_id":ObjectId(p_db_id)}, {"$set" : {"img_url" : blob_url}})
+        except:
+            raise HTTPException(status_code=400, detail="Error with Db in updating language preference")
+    
+    return {
+        "response" : details
+    }
+
 
 
