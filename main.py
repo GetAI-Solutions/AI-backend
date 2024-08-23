@@ -372,6 +372,27 @@ async def update_preferred_language(userID:str = Form(...), preferred_language: 
             }
         else:
             raise HTTPException(status_code=400, detail="user not found") 
+        
+@app.patch(f"{prefix}/change-password")
+async def change_password(userID:str = Form(...), new_password: str = Form(...)):
+    try:
+        user_det = usersClient.find_one({"_id":ObjectId(userID)})
+    except:
+        raise HTTPException(status_code=400, detail="user not found") 
+    
+    #print(user_det)
+    
+    if user_det:
+        try:
+            usersClient.find_one_and_update({"_id":ObjectId(userID)}, {"$set" : {"password" : new_password}})
+        except:
+            raise HTTPException(status_code=400, detail="Error with Db in updating passwrod")
+        
+        return {
+            "message" : "Password updated successfully"
+        }
+    else:
+        raise HTTPException(status_code=400, detail="user not found") 
 
 
 @app.get(f"{prefix}/get-all-products")
