@@ -4,6 +4,18 @@ FROM python:3.10-slim
 # Set the working directory in the container
 WORKDIR /getai-app
 
+# Install the necessary packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libzbar0 \
+    libzbar-dev \
+    libsm6 \
+    libxrender1 \
+    libfontconfig1 \
+    libice6 && \
+    rm -rf /var/lib/apt/lists/*
+    
+
 # Copy the current directory contents into the container at /app
 COPY . .
 

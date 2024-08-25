@@ -82,7 +82,7 @@ async def update_user_details(update_details : UpdateProfile):
         print("HEre")
         return user_d
     else:
-        update_data = {key: value for key, value in dict(update_details).items() if value is not None and key is not "user_id"}
+        update_data = {key: value for key, value in dict(update_details).items() if value is not None and key != "user_id"}
         if not update_data:
             return "No valid fields provided for update"
     
