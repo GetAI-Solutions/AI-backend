@@ -2,7 +2,7 @@
 
 This project provides a RESTful API using FastAPI to support the get-ai service. The service includes various endpoints for user management, product barcode scanning, product details retrieval, and AI-driven chat interactions.
 
-Please head over to [Architecture](Architecture.md) for backend Architecture
+Please head over to [Architecture](Architecture.md?plain=1) for backend Architecture
 
 ## Features
 
