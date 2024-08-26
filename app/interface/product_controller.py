@@ -31,7 +31,7 @@ async def get_product_summary(bar_code: str, userID: str):
         else:
             return "user not found"
     except:
-        return "user not found"
+        return "Some error"
 
     if product:
         try:
