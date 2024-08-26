@@ -90,10 +90,11 @@ async def chat_with_model(payload: chatTemp):
         "model_resp": response
     }
 
-async def source_details_from_perplexity(product_name:str, bar_code: str):
+async def source_details_from_perplexity(product_name:str):
     try:
-        details = get_details_from_perplexity(product_name, bar_code)
+        details = get_details_from_perplexity(product_name)
     except Exception as e:
+        print(str(e))
         return "Error from perplexity"
     return "success", details
     
@@ -112,7 +113,7 @@ async def save_details_from_perplexity(prod_name, bar_code, details):
 
 async def product_from_perplexity(prod_name:str, bar_code: str):
     try:
-        details = await source_details_from_perplexity(prod_name, bar_code)
+        details = await source_details_from_perplexity(prod_name)
     except Exception as e:
         return "Error getting details from perplexity" + str(e)
     

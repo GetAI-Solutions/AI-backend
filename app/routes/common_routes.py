@@ -43,6 +43,10 @@ async def source_from_perplexity(product_name:str = Form(...), bar_code: str = F
     if type(resp) == str:
         raise HTTPException(400, resp)
     
-    return resp
+    return {
+        "product_name": product_name,
+        "product_code": bar_code,
+        "product_details": resp["response"][1]
+    }
 
 

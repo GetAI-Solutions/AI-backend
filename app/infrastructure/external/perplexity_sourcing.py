@@ -1,6 +1,7 @@
 import requests
+from config import Perplexity_KEY
 
-def get_details_from_perplexity(product_name, auth_token, url = "https://api.perplexity.ai/chat/completions"):
+def get_details_from_perplexity(product_name, url = "https://api.perplexity.ai/chat/completions"):
     payload = {
     "model": "llama-3.1-sonar-small-128k-online",
     "messages": [
@@ -27,7 +28,7 @@ def get_details_from_perplexity(product_name, auth_token, url = "https://api.per
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "authorization": f"Bearer {auth_token}"
+        "authorization": f"Bearer {Perplexity_KEY}"
 
     }
 
