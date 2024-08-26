@@ -10,7 +10,8 @@ async def signup(payload: SignUp):
     except Exception as e:
         print(e)
         return "Error with DB"
-    if type(details) != str:
+    if type(details) != str and details is not None:
+        print("Here")
         return "Email is registered already"
     try:
         details = await user_service.create_user(payload)
@@ -23,8 +24,8 @@ async def signup(payload: SignUp):
         return "Error with user history creation"
     if type(details) != str:
         hh = await user_service.create_user_history(str(details.inserted_id))
-        if type(hh) != None:
-            return "Error with user history creation" 
+        if hh != None:
+            return hh
     return "success"
 
 
