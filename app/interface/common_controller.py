@@ -62,6 +62,7 @@ async def add_conversation_to_history(conv: dict, user_id: str, barcode: str):
 
 async def chat_with_model(payload: chatTemp):
     # Step 1: Get product details
+    print(payload.perplexity)
     product = await get_product_details(payload.bar_code, perplexity = payload.perplexity)
     if type(product) == str:
         return product
@@ -87,7 +88,7 @@ async def chat_with_model(payload: chatTemp):
     
     return "success", {
         "user_message": payload.user_message,
-        "model_resp": response
+        "model_resp": response[1]
     }
 
 async def source_details_from_perplexity(product_name:str):

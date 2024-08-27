@@ -24,16 +24,23 @@ async def find_product_by_barcode(bar_code: str, perplexity = False) -> Optional
 async def add_product_to_not_found_db(bar_code: str):    
     try:
         noProductClient.insert_one({
-            "product_code" : bar_code
+            "product_code" : int(bar_code)
         })
     except Exception as e:
                 print(str(e))
 
 async def add_product_to_perplexity_db(product_name, bar_code, details):
     try:
+        check_product_exists = alternative_details.find_one({'product_code': int(bar_code)})
+        if check_product_exists:
+            return "Product already exists in the database"
+    except Exception as e:
+        print(e)
+        return "Database query failed"
+    try:
         return alternative_details.insert_one({
             "product_name" : product_name,
-            "product_code" : bar_code,
+            "product_code" : int(bar_code),
             "product_details" : details
         })
     except Exception as e:
