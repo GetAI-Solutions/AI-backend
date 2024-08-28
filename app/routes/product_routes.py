@@ -24,6 +24,7 @@ async def get_product_summary(bar_code: str = Form(...), userID: str = Form(...)
     try:
         resp = await product_controller.get_product_summary(bar_code, userID)
     except Exception as e:
+        print(str(e))
         raise HTTPException(status_code=404, detail="Error in getting summary")
     if type(resp) == str:
         raise HTTPException(status_code=404, detail=resp)

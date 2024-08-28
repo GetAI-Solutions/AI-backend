@@ -19,7 +19,7 @@ async def get_product_summary(bar_code: str, userID: str):
     try:
         product = await product_service.find_product_by_barcode(bar_code)
         if not product:
-            product = product_service.find_product_by_barcode(bar_code, perplexity=True)
+            product = await product_service.find_product_by_barcode(bar_code, perplexity=True)
             if not product:
                 return "product not found"
     except Exception as e:
