@@ -84,7 +84,8 @@ async def add_to_user_product_hist(prod_code, user_id):
     #print(curr_uh)
 
     try:
-        curr_uh["product_history"].append(int(prod_code))
+        if int(prod_code) not in curr_uh["product_history"]:
+            curr_uh["product_history"].append(int(prod_code))
     except Exception as e:
         print(str(e))
         return "Error in adding new product to history"
