@@ -53,6 +53,8 @@ async def login(payload: LogIN):
         user_data = await user_service.validate_user(user_details, payload.password)
         if type(user_data) != str:
             return {"status": "success", "data": user_data}
+        else:
+            return user_data
         
     except Exception as e:
         print(str(e))
