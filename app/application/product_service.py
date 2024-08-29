@@ -6,7 +6,7 @@ from config import contClient, load_blob
 from io import BytesIO
 from bson.objectid import ObjectId
 
-async def find_product_by_barcode(bar_code: str, perplexity = False) -> Optional[dict]:
+async def find_product_by_barcode(bar_code: str, perplexity = False, userID = None) -> Optional[dict]:
     if perplexity == False:
         try:
             product = productsClient.find_one({"product_code": int(bar_code)})
@@ -15,7 +15,7 @@ async def find_product_by_barcode(bar_code: str, perplexity = False) -> Optional
             return "Error with DB"
     else:
         try:
-            product = alternative_details.find_one({"product_code": int(bar_code)})
+            product = alternative_details.find_one({"product_code": int(bar_code), "userID": userID})
             return product
         except Exception as e:
             return "Error with DB"
@@ -29,19 +29,20 @@ async def add_product_to_not_found_db(bar_code: str):
     except Exception as e:
                 print(str(e))
 
-async def add_product_to_perplexity_db(product_name, bar_code, details):
+async def add_product_to_perplexity_db(product_name, bar_code, details, userID):
     try:
-        check_product_exists = alternative_details.find_one({'product_code': int(bar_code)})
+        check_product_exists = alternative_details.find_one({'product_code': int(bar_code), "userID": userID})
         if check_product_exists:
-            return "Product already exists in the database"
+            return alternative_details.find_one_and_update({'product_code': int(bar_code), "userID": userID}, {"$set" : {"product_details" : details}})
     except Exception as e:
         print(e)
-        return "Database query failed"
+        return 'Database query failed'
     try:
         return alternative_details.insert_one({
             "product_name" : product_name,
             "product_code" : int(bar_code),
-            "product_details" : details
+            "product_details" : details,
+            "userID" : userID
         })
     except Exception as e:
         print(str(e))

@@ -34,9 +34,9 @@ async def chat_with_model(payload: chatTemp):
         
 ## Define endpoint For getting details from perplexity
 @router.post("/get-details-from-perplexity")
-async def source_from_perplexity(product_name:str = Form(...), bar_code: str = Form(...)):
+async def source_from_perplexity(product_name:str = Form(...), bar_code: str = Form(...), userID: str = Form(...)):
     try:
-        resp = await common_controller.product_from_perplexity(product_name, bar_code)
+        resp = await common_controller.product_from_perplexity(product_name, bar_code,userID)
     except Exception as e:
         raise HTTPException(400, "Unknown Error")
     
