@@ -123,9 +123,30 @@ async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
             res = await save_details_from_perplexity(prod_name, bar_code, details[1], userID)
         except Exception as e:
             return "Error getting details from perplexity" + str(e)
+        # IF the response is not a string then it is a success, lets trasnalste the details
         if type(res) != str:
+            try:
+                user_pref_language = await get_user_preferred_language(userID) #get user preferred language
+                # If user preferred language is a string then return the error
+                if type(user_pref_language) == str:
+                    return user_pref_language
+                sys_msg = await bot_service.get_sys_msgs_summary(details[1], user_pref_language[1]) #get system message for summary
+            except Exception as e:
+                return "Error in getting user preferred language"
+            try:
+                translated_summ = await bot_service.get_model_resp(sys_msg) # Get translated summary
+            except Exception as e:
+                return "Error in getting summary with OAI wrapper"
+
+            try:
+                summ_cont = translated_summ.choices[0].message.content # Get the content of the summary
+            except:
+                return summ_cont
+            # Update the product details with the summar
+            updated_details = (details[0], summ_cont)
+            
             return {
-                "response" : details
+                "response" : updated_details
             }
         else:
             return res

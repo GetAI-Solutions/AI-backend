@@ -38,6 +38,7 @@ async def source_from_perplexity(product_name:str = Form(...), bar_code: str = F
     try:
         resp = await common_controller.product_from_perplexity(product_name, bar_code,userID)
     except Exception as e:
+        print(str(e))
         raise HTTPException(400, "Unknown Error")
     
     if type(resp) == str:
