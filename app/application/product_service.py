@@ -20,6 +20,12 @@ async def find_product_by_barcode(bar_code: str, perplexity = False, userID = No
         except Exception as e:
             return "Error with DB"
 
+async def find_product_by_name(product_name: str):
+    try:
+        product = productsClient.find_one({"product_name": product_name})
+        return product
+    except Exception as e:
+        return "Error with DB"
 
 async def add_product_to_not_found_db(bar_code: str):    
     try:

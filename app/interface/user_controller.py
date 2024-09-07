@@ -6,7 +6,7 @@ from ..schema_templates.templates import SignUp, LogIN, UpdateProfile
 async def signup(payload: SignUp):
     print(payload)
     try:
-        details = await user_service.check_user_exists(payload.email)
+        details = await user_service.check_user_exists(payload.email.lower())
     except Exception as e:
         print(e)
         return "Error with DB"

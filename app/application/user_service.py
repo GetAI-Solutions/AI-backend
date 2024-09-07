@@ -16,7 +16,9 @@ async def check_user_exists(email: str):
 
 async def create_user(payload: SignUp):
     try:
-        result = usersClient.insert_one(dict(payload))
+        payload = dict(payload)
+        payload["email"] = payload["email"].lower()
+        result = usersClient.insert_one(payload)
         return "success", result
     except Exception as e:
         print(e)
@@ -58,7 +60,7 @@ async def find_user_by_phone(phone_no: str):
         return "Error with DB while finding user by phone"
 
 async def validate_user(details: dict, password: str):
-    if details and details["password"] == password:
+    if details and details["password"].lower() == password.lower():
         return {
             "message": "Sign In successful",
             "uid": str(details["_id"]),

@@ -69,4 +69,15 @@ async def add_img_to_product(file: UploadFile = File(...), bar_code: str = Form(
         raise HTTPException(status_code=400, detail= resp)
     
     return resp
+
+@router.post(f"/search-product-by-name")
+async def search_product_by_name(product_name: str = Form(...)):
+    try:
+        product = await product_controller.get_product_by_name(product_name)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Unknown Error")
     
+    if type(product) == str:
+        raise HTTPException(status_code=404, detail=product)
+    
+    return product
