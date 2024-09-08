@@ -22,10 +22,28 @@ class UpdateProfile(BaseModel):
     user_id : Optional[str] = None
     email: Optional[str] = None
     user_name: Optional[str] = None
-    password: Optional[str] = None
     phone_no: Optional[str] = None
     country: Optional[str] = None
     preferred_language: Optional[str] = None
+    old_password: str
+    new_password: str
+
+class UpdateProfileDetails(BaseModel):
+    user_id : Optional[str] = None
+    email: Optional[str] = None
+    user_name: Optional[str] = None
+    phone_no: Optional[str] = None
+    country: Optional[str] = None
+    preferred_language: Optional[str] = None
+
+class UpdatePassword(BaseModel):
+    user_id : Optional[str] = None
+    old_password: str
+    new_password: str
+
+class ResetPassword(BaseModel):
+    email: str = "oadeniran82@gmail.com"
+    password: str
 
 class LogIN(BaseModel):
     email: str = "oadeniran82@gmail.com"

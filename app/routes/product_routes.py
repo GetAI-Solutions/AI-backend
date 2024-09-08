@@ -70,10 +70,10 @@ async def add_img_to_product(file: UploadFile = File(...), bar_code: str = Form(
     
     return resp
 
-@router.post(f"/search-product-by-name")
+@router.post(f"/search-products-by-name")
 async def search_product_by_name(product_name: str = Form(...)):
     try:
-        product = await product_controller.get_product_by_name(product_name)
+        product = await product_controller.get_products_by_name(product_name)
     except Exception as e:
         raise HTTPException(status_code=404, detail="Unknown Error")
     

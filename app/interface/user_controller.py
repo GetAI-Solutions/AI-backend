@@ -78,18 +78,34 @@ async def get_user_chat_history(userID: str, barcode:str):
     
     return u_h
 
-async def update_user_details(update_details : UpdateProfile):
+async def update_user_details(update_details : UpdateProfile, change_password_flow = False, Reset_password = False):
     # Step 1: Fetch user details to verify if the user exists
-    user_d = await user_service.find_user_by_id(update_details.user_id)
+    if change_password_flow:
+        uid = update_details.user_id
+        user_d = await user_service.find_user_by_id(update_details.user_id)
+        if not user_d:
+            return "User not found"
+    elif Reset_password:
+        user_d = await user_service.find_user_by_email(update_details.email)
+        if user_d:
+            uid = user_d["_id"]
+        else:
+            return "User not found"
+    else:
+        uid = update_details.user_id
+        user_d = await user_service.find_user_by_id(update_details.user_id)
+        if not user_d:
+            return "User not found"
+        
     if type(user_d) == str:
         print("HEre")
         return user_d
     else:
-        update_data = {key: value for key, value in dict(update_details).items() if value is not None and key != "user_id"}
+        update_data = {key: value for key, value in dict(update_details).items() if value is not None and key != "user_id" and key != "email"}
         if not update_data:
             return "No valid fields provided for update"
     
-        return await user_service.update_user_details(update_details.user_id, update_data)
+        return await user_service.update_user_details(uid, update_data)
     
 
 async def give_user_feedback(userID:str, feedback:str, product_name:str = None):

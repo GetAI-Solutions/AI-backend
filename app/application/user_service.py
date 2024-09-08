@@ -175,6 +175,7 @@ async def update_user_details(user_id, update_data):
             {"$set": update_data},
             return_document=True  # Returns the updated document if needed
         )
+        print(updated_result)
         if not updated_result:
             return "Error updating user details"
         return {"message": "User details updated successfully"}

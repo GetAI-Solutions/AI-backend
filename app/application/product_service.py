@@ -20,9 +20,9 @@ async def find_product_by_barcode(bar_code: str, perplexity = False, userID = No
         except Exception as e:
             return "Error with DB"
 
-async def find_product_by_name(product_name: str):
+async def find_products_by_name(product_name: str):
     try:
-        product = productsClient.find_one({"product_name": product_name})
+        product = {p["product_name"] : p["product_code"] for p in productsClient.find({"product_name_lower": {"$regex": product_name.lower()}})}
         return product
     except Exception as e:
         return "Error with DB"

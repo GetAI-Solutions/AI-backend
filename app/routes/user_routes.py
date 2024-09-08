@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Form
 from ..interface import user_controller
-from ..schema_templates.templates import SignUp, LogIN, UpdateProfile
+from ..schema_templates.templates import SignUp, LogIN, UpdateProfile, UpdateProfileDetails, UpdatePassword, ResetPassword
 
 
 router = APIRouter()
@@ -65,7 +65,7 @@ async def get_user_history(userID: str = Form(...), barcode: str = Form(...)):
 
 ## Define endpoint to update user preference
 @router.patch(f"/update-user-preference")
-async def update_user_pref(update_details: UpdateProfile):
+async def update_user_pref(update_details: UpdateProfileDetails):
     try:
         user_det = await user_controller.update_user_details(update_details)
     except:
@@ -76,7 +76,20 @@ async def update_user_pref(update_details: UpdateProfile):
     else:
         return user_det
 
-## Define endpoint to update user preference   
+## Define endpoint to reset user password
+@router.patch(f"/reset-user-password")
+async def reset_user_password(update_details: ResetPassword):
+    try:
+        user_det = await user_controller.update_user_details(update_details, Reset_password=True)
+    except:
+        raise HTTPException(status_code=400, detail="Error Resetting Password") 
+    
+    if type(user_det) == str:
+        raise HTTPException(status_code=400, detail="Error Updating preference " + user_det) 
+    else:
+        return user_det
+
+## Define endpoint to give feedback  
 @router.post(f"/give-user-feedback")
 async def give_user_feedback(userID:str = Form(...), feedback:str = Form(...), product_name:str = None):
     try:

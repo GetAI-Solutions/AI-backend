@@ -15,16 +15,11 @@ async def get_product(bar_code: str):
     else:
         return "Product not found"
 
-async def get_product_by_name(product_name: str):
+async def get_products_by_name(product_name: str):
     try:
-        product = await product_service.find_product_by_name(product_name)
+        product = await product_service.find_products_by_name(product_name)
         if product:
-            return "success", {
-                "_id": str(product["_id"]),
-                "product_code": product["product_code"],
-                "product_name": product["product_name"],
-                "product_details": product["product_details"]
-            }
+            return "success", product
         else:
             return "Product not found"
     except Exception as e:
