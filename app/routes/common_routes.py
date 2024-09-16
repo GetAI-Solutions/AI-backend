@@ -50,4 +50,20 @@ async def source_from_perplexity(product_name:str = Form(...), bar_code: str = F
         "product_details": resp["response"][1]}
     }
 
+@router.post(f"/search-perplexity-by-name")
+async def search_perplexity_by_name(product_name: str = Form(...), userID: str = Form(...)):
+    try:
+        resp = await common_controller.search_perplexity_by_name(product_name,userID)
+    except Exception as e:
+        print(str(e))
+        raise HTTPException(400, "Unknown Error")
+    
+    if type(resp) == str:
+        raise HTTPException(400, resp)
+    
+    print(resp)
+    return {"product": 
+        {"product_name": product_name,
+        "product_details": resp[1]}
+    }
 

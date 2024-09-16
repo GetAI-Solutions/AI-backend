@@ -118,7 +118,7 @@ async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
     except Exception as e:
         return "Error getting details from perplexity" + str(e)
     
-    if type(details) != str:
+    if type(details) != str and type(bar_code) == str:
         try:
             res = await save_details_from_perplexity(prod_name, bar_code, details[1], userID)
         except Exception as e:
@@ -152,3 +152,20 @@ async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
             return res
     else:
         return details
+
+async def search_perplexity_by_name(product_name: str, userID: str):
+    try:
+        validationsysMsg = await bot_service.get_validation_sys_msg(product_name)
+        validation_resp = await bot_service.get_model_resp(validationsysMsg, text="")
+    except Exception as e:
+        return "Error in getting validation response"
+    
+    try:
+        validation_resp = validation_resp.choices[0].message.content
+        print(validation_resp)
+        if "true" in validation_resp.lower():
+            return await product_from_perplexity(product_name, bar_code=None, userID=userID)
+        else:
+            return "Product name not looking accurate. Please try again"
+    except Exception as e:	
+        return "Error in getting validation response content"
