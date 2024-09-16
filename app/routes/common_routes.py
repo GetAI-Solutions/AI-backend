@@ -64,6 +64,6 @@ async def search_perplexity_by_name(product_name: str = Form(...), userID: str =
     print(resp)
     return {"product": 
         {"product_name": product_name,
-        "product_details": resp[1]}
+        "product_details": resp["response"][1]}
     }
 

@@ -118,9 +118,11 @@ async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
     except Exception as e:
         return "Error getting details from perplexity" + str(e)
     
-    if type(details) != str and type(bar_code) == str:
+    if type(details) != str:
+        res = tuple()
         try:
-            res = await save_details_from_perplexity(prod_name, bar_code, details[1], userID)
+            if type(bar_code) == str:
+                res = await save_details_from_perplexity(prod_name, bar_code, details[1], userID)
         except Exception as e:
             return "Error getting details from perplexity" + str(e)
         # IF the response is not a string then it is a success, lets trasnalste the details
