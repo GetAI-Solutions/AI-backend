@@ -6,7 +6,7 @@ from config import contClient, load_blob
 from io import BytesIO
 from bson.objectid import ObjectId
 
-async def find_product_by_barcode(bar_code: str, perplexity = False, noName = False, userID = None) -> Optional[dict]:
+async def find_product_by_barcode(bar_code: str, perplexity = False, noCode = False, userID = None) -> Optional[dict]:
     if perplexity == False:
         try:
             product = productsClient.find_one({"product_code": int(bar_code)})
@@ -14,7 +14,7 @@ async def find_product_by_barcode(bar_code: str, perplexity = False, noName = Fa
         except Exception as e:
             return "Error with DB"
     else:
-        if perplexity == True and noName == False:
+        if perplexity == True and noCode == False:
             try:
                 product = alternative_details.find_one({"product_code": int(bar_code), "userID": userID})
                 return product

@@ -19,9 +19,9 @@ async def upload_barcode(file: UploadFile):
     
     return "success", {"product_barcode": extracted_barcode.lstrip('0')}
 
-async def get_product_details(barcode: str, perplexity = False,noName = False, userID = None):
+async def get_product_details(barcode: str, perplexity = False,noCode = False, userID = None):
     try:
-        product = await product_service.find_product_by_barcode(barcode, perplexity,noName, userID)
+        product = await product_service.find_product_by_barcode(barcode, perplexity,noCode, userID)
         if not product:
             return "Product not found"
         return product
@@ -64,7 +64,7 @@ async def add_conversation_to_history(conv: dict, user_id: str, barcode: str):
 async def chat_with_model(payload: chatTemp):
     # Step 1: Get product details
     print(payload.perplexity)
-    product = await get_product_details(payload.bar_code, perplexity = payload.perplexity, noName=payload.noName, userID = payload.userID)
+    product = await get_product_details(payload.bar_code, perplexity = payload.perplexity, noCode=payload.noCode, userID = payload.userID)
     if type(product) == str:
         return product
 

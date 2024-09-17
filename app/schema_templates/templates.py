@@ -56,4 +56,4 @@ class chatTemp(BaseModel):
     bar_code:str = "product_barcode"
     user_message:str = "user_message"
     perplexity: bool = False
-    noName: bool = False
+    noCode: bool = False
