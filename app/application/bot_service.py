@@ -110,7 +110,7 @@ async def get_model_resp(sys_msgs, text = "summary"):
                     "content": text,
                 }
             ],
-            model="gpt-4o-mini",
+            model="ft:gpt-4o-mini-2024-07-18:personal::A8I6zqZu",
         )
     return response
 
