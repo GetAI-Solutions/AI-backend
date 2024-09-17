@@ -158,10 +158,11 @@ async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
             except Exception as e:
                 return "Error in getting user preferred language"
             try:
-                if user_pref_language.lower() == "am":
+                if user_pref_language[1].lower() == "am":
                     am = True
                 translated_summ = await bot_service.get_model_resp(sys_msg, am= am) # Get translated summary
             except Exception as e:
+                print(str(e))
                 return "Error in getting summary with OAI wrapper"
 
             try:
