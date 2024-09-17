@@ -1,12 +1,12 @@
 from typing import Optional
 from fastapi import HTTPException
-from ..infrastructure.database.db import productsClient, noProductClient, alternative_details
+from ..infrastructure.database.db import productsClient, noProductClient, alternative_details, alternative_details_uuid
 from fastapi import File, UploadFile
 from config import contClient, load_blob
 from io import BytesIO
 from bson.objectid import ObjectId
 
-async def find_product_by_barcode(bar_code: str, perplexity = False, userID = None) -> Optional[dict]:
+async def find_product_by_barcode(bar_code: str, perplexity = False, noName = False, userID = None) -> Optional[dict]:
     if perplexity == False:
         try:
             product = productsClient.find_one({"product_code": int(bar_code)})
@@ -14,11 +14,18 @@ async def find_product_by_barcode(bar_code: str, perplexity = False, userID = No
         except Exception as e:
             return "Error with DB"
     else:
-        try:
-            product = alternative_details.find_one({"product_code": int(bar_code), "userID": userID})
-            return product
-        except Exception as e:
-            return "Error with DB"
+        if perplexity == True and noName == False:
+            try:
+                product = alternative_details.find_one({"product_code": int(bar_code), "userID": userID})
+                return product
+            except Exception as e:
+                return "Error with DB"
+        else:
+            try:
+                product = alternative_details_uuid.find_one({"product_code": bar_code, "userID": userID})
+                return product
+            except Exception as e:
+                return "Error with DB"
 
 async def find_products_by_name(product_name: str):
     try:
@@ -47,6 +54,25 @@ async def add_product_to_perplexity_db(product_name, bar_code, details, userID):
         return alternative_details.insert_one({
             "product_name" : product_name,
             "product_code" : int(bar_code),
+            "product_details" : details,
+            "userID" : userID
+        })
+    except Exception as e:
+        print(str(e))
+        return "Could not add to perplexity"
+
+async def add_product_to_perplexity_db_uuid(product_name, bar_code, details, userID):
+    try:
+        check_product_exists = alternative_details_uuid.find_one({'product_code': bar_code, "userID": userID})
+        if check_product_exists:
+            return alternative_details_uuid.find_one_and_update({'product_code': bar_code, "userID": userID}, {"$set" : {"product_details" : details}})
+    except Exception as e:
+        print(e)
+        return 'Database query failed'
+    try:
+        return alternative_details_uuid.insert_one({
+            "product_name" : product_name,
+            "product_code" : bar_code,
             "product_details" : details,
             "userID" : userID
         })

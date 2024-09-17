@@ -5,6 +5,7 @@ from ..application import barcode_service, bot_service , product_service, user_s
 from config import OAI_KEY_TOKEN
 from ..schema_templates.templates import language_code, chatTemp
 from ..infrastructure.external.perplexity_sourcing import get_details_from_perplexity
+import uuid
 
 async def upload_barcode(file: UploadFile):
     file_contents = await file.read()
@@ -18,9 +19,9 @@ async def upload_barcode(file: UploadFile):
     
     return "success", {"product_barcode": extracted_barcode.lstrip('0')}
 
-async def get_product_details(barcode: str, perplexity = False, userID = None):
+async def get_product_details(barcode: str, perplexity = False,noName = False, userID = None):
     try:
-        product = await product_service.find_product_by_barcode(barcode, perplexity, userID)
+        product = await product_service.find_product_by_barcode(barcode, perplexity,noName, userID)
         if not product:
             return "Product not found"
         return product
@@ -63,7 +64,7 @@ async def add_conversation_to_history(conv: dict, user_id: str, barcode: str):
 async def chat_with_model(payload: chatTemp):
     # Step 1: Get product details
     print(payload.perplexity)
-    product = await get_product_details(payload.bar_code, perplexity = payload.perplexity, userID = payload.userID)
+    product = await get_product_details(payload.bar_code, perplexity = payload.perplexity, noName=payload.noName, userID = payload.userID)
     if type(product) == str:
         return product
 
@@ -112,7 +113,22 @@ async def save_details_from_perplexity(prod_name, bar_code, details, userID):
             "response" : details
         }
 
+async def save_details_from_perplexity_uuid(prod_name, bar_code, details, userID):
+    try:
+        res = await product_service.add_product_to_perplexity_db_uuid(prod_name, bar_code, details, userID)
+    except Exception as e:
+        return "Error adding details to perplexity DB" + str(e)
+    
+    if type(res) == str:
+        return res
+    else:
+        return {
+            "response" : details
+        }
+
+
 async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
+    uuid_bar_code = None
     try:
         details = await source_details_from_perplexity(prod_name)
     except Exception as e:
@@ -123,6 +139,9 @@ async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
         try:
             if type(bar_code) == str:
                 res = await save_details_from_perplexity(prod_name, bar_code, details[1], userID)
+            else:
+                uuid_bar_code = str(uuid.uuid3(namespace = uuid.NAMESPACE_X500,name = prod_name+userID))
+                res = await save_details_from_perplexity_uuid(prod_name, uuid_bar_code, details[1], userID)
         except Exception as e:
             return "Error getting details from perplexity" + str(e)
         # IF the response is not a string then it is a success, lets trasnalste the details
@@ -146,10 +165,15 @@ async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
                 return summ_cont
             # Update the product details with the summar
             updated_details = (details[0], summ_cont)
-            
-            return {
-                "response" : updated_details
+            if type(uuid_bar_code) == str:
+                return {
+                "response" : updated_details,
+                "uuid_bar_code" : uuid_bar_code
             }
+            else:
+                return {
+                    "response" : updated_details
+                }
         else:
             return res
     else:
