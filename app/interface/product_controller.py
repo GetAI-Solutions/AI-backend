@@ -26,6 +26,7 @@ async def get_products_by_name(product_name: str):
         return "Error with DB in finding product \n"
 
 async def get_product_summary(bar_code: str, userID: str):
+    am = False
     try:
         product = await product_service.find_product_by_barcode(bar_code)
         if not product:
@@ -62,11 +63,12 @@ async def get_product_summary(bar_code: str, userID: str):
         if "img_url" in product:
             img_url = product["img_url"]
          
-
         sys_msg_summary = await bot_service.get_sys_msgs_summary(details, pref_lang=user_pref_language)
         
         try:
-            summary_txt = await bot_service.get_model_resp(sys_msg_summary)
+            if user_pref_language.lower() == "am":
+                am = True
+            summary_txt = await bot_service.get_model_resp(sys_msg_summary, am = am)
         except Exception as e:
             return "Error in getting summary with OAI wrapper"
 

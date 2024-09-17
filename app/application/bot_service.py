@@ -102,7 +102,11 @@ async def get_resp(sys_msgs, text = "summary", token = None):
 
     return content
 
-async def get_model_resp(sys_msgs, text = "summary"):
+async def get_model_resp(sys_msgs, text = "summary", am= False):
+    if am == True:
+        model = "ft:gpt-4o-mini-2024-07-18:personal::A8I6zqZu"
+    else:
+        model = "gpt-4o-mini"
     response = bot.chat.completions.create(
             messages= sys_msgs + [
                 {
@@ -110,7 +114,7 @@ async def get_model_resp(sys_msgs, text = "summary"):
                     "content": text,
                 }
             ],
-            model="ft:gpt-4o-mini-2024-07-18:personal::A8I6zqZu",
+            model=model,
         )
     return response
 

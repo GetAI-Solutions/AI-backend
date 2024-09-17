@@ -10,7 +10,7 @@ def get_details_from_perplexity(product_name, url = "https://api.perplexity.ai/c
             "role": "system"
         },
         {
-            "content":f" Please give me extensive details about the following prouct - {product_name}. Ensure to include as much information as possible",
+            "content":f" Please give me extensive details about the following prouct - {product_name}. Ensure to include as much information as possible inclusing the Ingredients, Usage, Use instructions, Average price point, Allergies and any other relevant information",
             "role": "user"
         }
     ],

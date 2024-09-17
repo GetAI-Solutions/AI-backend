@@ -40,10 +40,12 @@ async def get_user_preferred_language(user_id: str):
         print(e)
         return "Error in getting details"
 
-async def get_chat_response(product_details: str, user_message: str, user_pref_language: str):
+async def get_chat_response(product_details: str, user_message: str, user_pref_language: str, am = False):
     sys_msg = await bot_service.get_sys_msgs(product_details, pref_lang=user_pref_language)
     try:
-        model_resp = await bot_service.get_model_resp(sys_msg, text=user_message)
+        if user_pref_language.lower() == "am":
+            am = True
+        model_resp = await bot_service.get_model_resp(sys_msg, text=user_message, am=am)
     except Exception as e:
         print(e)
         return "Error generating model response"
@@ -129,6 +131,7 @@ async def save_details_from_perplexity_uuid(prod_name, bar_code, details, userID
 
 async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
     uuid_bar_code = None
+    am = False
     try:
         details = await source_details_from_perplexity(prod_name)
     except Exception as e:
@@ -155,7 +158,9 @@ async def product_from_perplexity(prod_name:str, bar_code: str, userID: str):
             except Exception as e:
                 return "Error in getting user preferred language"
             try:
-                translated_summ = await bot_service.get_model_resp(sys_msg) # Get translated summary
+                if user_pref_language.lower() == "am":
+                    am = True
+                translated_summ = await bot_service.get_model_resp(sys_msg, am= am) # Get translated summary
             except Exception as e:
                 return "Error in getting summary with OAI wrapper"
 
