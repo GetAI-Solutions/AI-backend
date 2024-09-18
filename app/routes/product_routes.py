@@ -82,7 +82,7 @@ async def search_product_by_name(product_name: str = Form(...)):
     
     return product
 
-@router.post(f"/get-home-page-products")
+@router.get(f"/get-home-page-products")
 async def get_home_page_products():
     try:
         products = await product_controller.get_home_page_products()
