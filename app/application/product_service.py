@@ -181,3 +181,63 @@ async def add_img_to_product(file: UploadFile, bar_code: str, p_db_id:str):
     return {
         "response" : "Image Added"
     }
+
+async def find_products_with_non_empty_imgfield():
+    try:
+        products = productsClient.aggregate([
+                {
+                    "$match": {
+                        "img_url": { "$ne": "", "$ne": None } 
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": "$product_name",  # Group by product_name
+                        "product_code": { "$first": "$product_code" },
+                        "product_details": { "$first": "$product_details" },
+                        "img_url": { "$first": "$img_url" },
+                        "original_id": { "$first": "$_id" }
+                    }
+                },
+                {
+                    "$project": {
+                        #"_id": 0,  # Remove the grouping _id
+                        "product_name": "$_id",  # Restore product_name
+                        "product_code": 1,
+                        "product_details": 1,
+                        "img_url": 1,
+                        "_id": { "$toString": "$original_id" }  # Convert original _id to string
+                    }
+                }
+            ])
+
+        return list(p for p in products if "img_url" in p)
+    except Exception as e:
+        print(e)
+        return "Error with DB"
+
+async def find_products_by_barcodes(barcodes: list):
+    try:
+        #products = productsClient.find({"product_code": {"$in": barcodes}})
+        products = productsClient.aggregate([
+                    {
+                        "$match": {
+                            "product_code": {"$in": barcodes}
+                        }
+                    },
+                    {
+                        "$project": {
+                            "_id": {
+                                "$toString": "$_id"
+                            },
+                            "product_code": 1,
+                            "product_name": 1,
+                            "product_details": 1,
+                            "img_url": 1
+                        }
+                    }
+                ])
+        return list(p for p in products if "img_url" in p)
+    except Exception as e:
+        print(e)
+        return "Error with DB"

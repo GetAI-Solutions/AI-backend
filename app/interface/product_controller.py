@@ -2,6 +2,7 @@ from fastapi import File, UploadFile
 from ..application import product_service, bot_service, user_service
 from ..schema_templates.templates import language_code
 from config import OAI_KEY_TOKEN
+import random
 
 async def get_product(bar_code: str):
     product = await product_service.find_product_by_barcode(bar_code)
@@ -131,3 +132,48 @@ async def add_img_to_product(file: UploadFile, bar_code: str):
             return "Uknown Error" + str(e)
     
     return resp
+
+def split_list_into_three(lst):
+    n = len(lst)
+    
+    # Calculate the size of each part
+    split_size = n // 3
+    remainder = n % 3
+    
+    # Calculate the start indices for each split
+    first_split_end = split_size + (1 if remainder > 0 else 0)
+    second_split_end = first_split_end + split_size + (1 if remainder > 1 else 0)
+    
+    # Create the three parts
+    part1 = lst[:first_split_end]
+    part2 = lst[first_split_end:second_split_end]
+    part3 = lst[second_split_end:]
+    
+    return part1, part2, part3
+
+async def get_home_page_products():
+    try:
+        products = await product_service.find_products_with_non_empty_imgfield()
+    except Exception as e:
+        return "Error with db"
+    
+    try:
+        africanProducts = await product_service.find_products_by_barcodes([8719327078297, 4005808226740, 6186000077021])
+    except Exception as e:
+        return "Error with db"
+    
+    split1, split2, split3= split_list_into_three(products)
+    response = [
+        {"section":"African Made",
+        "items": africanProducts},
+        {"section":"Popular Today",
+        "items": random.sample(split1, 3)},
+        {"section":"Sponsored",
+        "items": random.sample(split2, 3)},
+        {"section":"Latest Additions",
+        "items": random.sample(split3, 3)},
+    ]
+
+    #print(response)
+    
+    return response

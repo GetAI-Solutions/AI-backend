@@ -81,3 +81,16 @@ async def search_product_by_name(product_name: str = Form(...)):
         raise HTTPException(status_code=404, detail=product)
     
     return product
+
+@router.post(f"/get-home-page-products")
+async def get_home_page_products():
+    try:
+        products = await product_controller.get_home_page_products()
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=404, detail="Unknown Error")
+    
+    if type(products) == str:
+        raise HTTPException(status_code=404, detail=products)
+    
+    return products
