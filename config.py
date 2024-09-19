@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient, ContentSettings
 from openai import OpenAI
 
 load_dotenv()

@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from ..infrastructure.database.db import productsClient, noProductClient, alternative_details, alternative_details_uuid
 from fastapi import File, UploadFile
 from config import contClient, load_blob
+from azure.storage.blob import ContentSettings
 from io import BytesIO
 from bson.objectid import ObjectId
 
@@ -168,7 +169,11 @@ async def add_img_to_product(file: UploadFile, bar_code: str, p_db_id:str):
         blob = load_blob(contClient, bar_code + ".png")
         file_contents = await file.read()
         img = BytesIO(file_contents)
-        blob.upload_blob(img, overwrite = True)
+        content_settings = ContentSettings(
+            content_type="image/png",  # Set the content type, e.g., 'application/pdf'
+            content_disposition="inline"  # 'inline' allows viewing in the browser without download
+        )
+        blob.upload_blob(img, overwrite = True, content_settings = content_settings)
         blob_url = blob.url
     except Exception as e:
         return "Error in uploading file to blob" 
@@ -185,36 +190,56 @@ async def add_img_to_product(file: UploadFile, bar_code: str, p_db_id:str):
 async def find_products_with_non_empty_imgfield():
     try:
         products = productsClient.aggregate([
-                {
-                    "$match": {
-                        "img_url": { "$ne": "", "$ne": None } 
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$product_name",  # Group by product_name
-                        "product_code": { "$first": "$product_code" },
-                        "product_details": { "$first": "$product_details" },
-                        "img_url": { "$first": "$img_url" },
-                        "original_id": { "$first": "$_id" }
-                    }
-                },
-                {
-                    "$project": {
-                        #"_id": 0,  # Remove the grouping _id
-                        "product_name": "$_id",  # Restore product_name
-                        "product_code": 1,
-                        "product_details": 1,
-                        "img_url": 1,
-                        "_id": { "$toString": "$original_id" }  # Convert original _id to string
+            {
+                "$match": {
+                    "img_url": { "$ne": "", "$ne": None },
+                    "product_name": { 
+                        "$not": { "$regex": "coca cola|fanta", "$options": "i" }  # Exclude 'coca cola' and 'fanta'
                     }
                 }
-            ])
-
-        return list(p for p in products if "img_url" in p)
+            },
+            {
+                "$group": {
+                    "_id": "$product_name",  # Group by product_name
+                    "product_code": { "$first": "$product_code" },
+                    "product_details": { "$first": "$product_details" },
+                    "img_url": { "$first": "$img_url" },
+                    "original_id": { "$first": "$_id" }
+                }
+            },
+            {
+                "$project": {
+                    "product_name": "$_id",  # Restore product_name
+                    "product_code": 1,
+                    # Extract the first few sentences from product_details for product_summary
+                    "product_summary": {
+                        "$let": {
+                            "vars": {
+                                "sentences": { "$split": ["$product_details", ". "] }
+                            },
+                            "in": {
+                                "$reduce": {
+                                    "input": { "$slice": ["$$sentences", 2] },  # Adjust the number of sentences to include
+                                    "initialValue": "",
+                                    "in": {
+                                        "$cond": [
+                                            { "$eq": ["$$value", ""] },
+                                            { "$concat": ["$$this", "."] },
+                                            { "$concat": ["$$value", " ", "$$this", "."] }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "image_url": "$img_url",
+                    "_id": { "$toString": "$original_id" }  # Convert original _id to string
+                }
+            }
+        ])
+        return list(p for p in products)
     except Exception as e:
-        print(e)
-        return "Error with DB"
+        print(f"An error occurred: {e}")
 
 async def find_products_by_barcodes(barcodes: list):
     try:
@@ -232,12 +257,32 @@ async def find_products_by_barcodes(barcodes: list):
                             },
                             "product_code": 1,
                             "product_name": 1,
-                            "product_details": 1,
-                            "img_url": 1
+                            # Extract the first few sentences from product_details for product_summary
+                            "product_summary": {
+                                "$let": {
+                                    "vars": {
+                                        "sentences": { "$split": ["$product_details", ". "] }
+                                    },
+                                    "in": {
+                                        "$reduce": {
+                                            "input": { "$slice": ["$$sentences", 2] },  # Adjust the number of sentences to include
+                                            "initialValue": "",
+                                            "in": {
+                                                "$cond": [
+                                                    { "$eq": ["$$value", ""] },
+                                                    { "$concat": ["$$this", "."] },
+                                                    { "$concat": ["$$value", " ", "$$this", "."] }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "image_url": "$img_url"
                         }
                     }
                 ])
-        return list(p for p in products if "img_url" in p)
+        return list(p for p in products)
     except Exception as e:
         print(e)
         return "Error with DB"
