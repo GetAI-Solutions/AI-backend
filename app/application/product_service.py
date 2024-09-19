@@ -210,7 +210,7 @@ async def find_products_with_non_empty_imgfield():
             {
                 "$project": {
                     "product_name": "$_id",  # Restore product_name
-                    "product_code": 1,
+                    "product_barcode": "$product_code",
                     # Extract the first few sentences from product_details for product_summary
                     "product_summary": {
                         "$let": {
@@ -255,7 +255,7 @@ async def find_products_by_barcodes(barcodes: list):
                             "_id": {
                                 "$toString": "$_id"
                             },
-                            "product_code": 1,
+                            "product_barcode": "$product_code",
                             "product_name": 1,
                             # Extract the first few sentences from product_details for product_summary
                             "product_summary": {
