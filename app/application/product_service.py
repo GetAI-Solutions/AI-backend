@@ -212,7 +212,26 @@ async def find_products_with_non_empty_imgfield():
                     "product_name": "$_id",  # Restore product_name
                     "product_barcode": "$product_code",
                     # Extract the first few sentences from product_details for product_summary
-                    "product_summary": "$product_details",
+                    "product_summary": {
+                        "$let": {
+                            "vars": {
+                                "sentences": { "$split": ["$product_details", ". "] }
+                            },
+                            "in": {
+                                "$reduce": {
+                                    "input": { "$slice": ["$$sentences", 3] },  # Adjust the number of sentences to include
+                                    "initialValue": "",
+                                    "in": {
+                                        "$cond": [
+                                            { "$eq": ["$$value", ""] },
+                                            { "$concat": ["$$this", "."] },
+                                            { "$concat": ["$$value", " ", "$$this", "."] }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "image_url": "$img_url",
                     "_id": { "$toString": "$original_id" }  # Convert original _id to string
                 }
@@ -239,7 +258,26 @@ async def find_products_by_barcodes(barcodes: list):
                             "product_barcode": "$product_code",
                             "product_name": 1,
                             # Extract the first few sentences from product_details for product_summary
-                            "product_summary": "$product_details",
+                            "product_summary": {
+                                "$let": {
+                                    "vars": {
+                                        "sentences": { "$split": ["$product_details", ". "] }
+                                    },
+                                    "in": {
+                                        "$reduce": {
+                                            "input": { "$slice": ["$$sentences", 3] },  # Adjust the number of sentences to include
+                                            "initialValue": "",
+                                            "in": {
+                                                "$cond": [
+                                                    { "$eq": ["$$value", ""] },
+                                                    { "$concat": ["$$this", "."] },
+                                                    { "$concat": ["$$value", " ", "$$this", "."] }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            },
                             "image_url": "$img_url"
                         }
                     }
