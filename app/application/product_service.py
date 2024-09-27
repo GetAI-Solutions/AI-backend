@@ -190,53 +190,59 @@ async def add_img_to_product(file: UploadFile, bar_code: str, p_db_id:str):
 async def find_products_with_non_empty_imgfield():
     try:
         products = productsClient.aggregate([
-            {
-                "$match": {
-                    "img_url": { "$ne": "", "$ne": None },
-                    "product_name": { 
-                        "$not": { "$regex": "coca cola|fanta", "$options": "i" }  # Exclude 'coca cola' and 'fanta'
-                    }
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$product_name",  # Group by product_name
-                    "product_code": { "$first": "$product_code" },
-                    "product_details": { "$first": "$product_details" },
-                    "img_url": { "$first": "$img_url" },
-                    "original_id": { "$first": "$_id" }
-                }
-            },
-            {
-                "$project": {
-                    "product_name": "$_id",  # Restore product_name
-                    "product_barcode": "$product_code",
-                    # Extract the first few sentences from product_details for product_summary
-                    "product_summary": {
-                        "$let": {
-                            "vars": {
-                                "sentences": { "$split": ["$product_details", ". "] }
-                            },
-                            "in": {
-                                "$reduce": {
-                                    "input": { "$slice": ["$$sentences", 3] },  # Adjust the number of sentences to include
-                                    "initialValue": "",
-                                    "in": {
-                                        "$cond": [
-                                            { "$eq": ["$$value", ""] },
-                                            { "$concat": ["$$this", "."] },
-                                            { "$concat": ["$$value", " ", "$$this", "."] }
-                                        ]
-                                    }
-                                }
+                    {
+                        "$match": {
+                            "img_url": { "$ne": "", "$ne": None },
+                            "product_name": { 
+                                "$not": { "$regex": "coca cola|fanta", "$options": "i" }  # Exclude 'coca cola' and 'fanta'
                             }
                         }
                     },
-                    "image_url": "$img_url",
-                    "_id": { "$toString": "$original_id" }  # Convert original _id to string
-                }
-            }
-        ])
+                    {
+                        "$group": {
+                            "_id": "$product_name",  # Group by product_name
+                            "product_code": { "$first": "$product_code" },
+                            "product_details": { "$first": "$product_details" },
+                            "img_url": { "$first": "$img_url" },
+                            "original_id": { "$first": "$_id" }
+                        }
+                    },
+                    {
+                        "$project": {
+                            "product_name": "$_id",  # Restore product_name
+                            "product_barcode": "$product_code",
+                            # Extract the first few sentences from product_details for product_summary
+                            "product_summary": {
+                                "$let": {
+                                    "vars": {
+                                        "sentences": { "$split": ["$product_details", ". "] }
+                                    },
+                                    "in": {
+                                        "$concat": [
+                                            {
+                                                "$reduce": {
+                                                    "input": { "$slice": ["$$sentences", 2] },  # Adjust the number of sentences to include
+                                                    "initialValue": "",
+                                                    "in": {
+                                                        "$cond": [
+                                                            { "$eq": ["$$value", ""] },
+                                                            { "$concat": ["$$this", "."] },
+                                                            { "$concat": ["$$value", " ", "$$this", "."] }
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            " Proceed to chatbot for more details."
+                                        ]
+                                    }
+                                }
+                            },
+                            "image_url": "$img_url",
+                            "_id": { "$toString": "$original_id" }  # Convert original _id to string
+                        }
+                    }
+                ])
+
         return list(p for p in products)
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -252,11 +258,8 @@ async def find_products_by_barcodes(barcodes: list):
                     },
                     {
                         "$project": {
-                            "_id": {
-                                "$toString": "$_id"
-                            },
+                            "product_name": 1,  # Restore product_name
                             "product_barcode": "$product_code",
-                            "product_name": 1,
                             # Extract the first few sentences from product_details for product_summary
                             "product_summary": {
                                 "$let": {
@@ -264,21 +267,27 @@ async def find_products_by_barcodes(barcodes: list):
                                         "sentences": { "$split": ["$product_details", ". "] }
                                     },
                                     "in": {
-                                        "$reduce": {
-                                            "input": { "$slice": ["$$sentences", 3] },  # Adjust the number of sentences to include
-                                            "initialValue": "",
-                                            "in": {
-                                                "$cond": [
-                                                    { "$eq": ["$$value", ""] },
-                                                    { "$concat": ["$$this", "."] },
-                                                    { "$concat": ["$$value", " ", "$$this", "."] }
-                                                ]
-                                            }
-                                        }
+                                        "$concat": [
+                                            {
+                                                "$reduce": {
+                                                    "input": { "$slice": ["$$sentences", 2] },  # Adjust the number of sentences to include
+                                                    "initialValue": "",
+                                                    "in": {
+                                                        "$cond": [
+                                                            { "$eq": ["$$value", ""] },
+                                                            { "$concat": ["$$this", "."] },
+                                                            { "$concat": ["$$value", " ", "$$this", "."] }
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            " Proceed to chatbot for more details."
+                                        ]
                                     }
                                 }
                             },
-                            "image_url": "$img_url"
+                            "image_url": "$img_url",
+                            "_id": { "$toString": "$_id" }  # Convert original _id to string
                         }
                     }
                 ])
