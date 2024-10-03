@@ -94,3 +94,15 @@ async def get_home_page_products():
         raise HTTPException(status_code=404, detail=products)
     
     return products
+
+@router.post(f"rate-product")
+async def rate_product(product_id: str = Form(...), rating: int = Form(...)):
+    try:
+        resp = await product_controller.rate_product(product_id, rating)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Unknown Error")
+    
+    if type(resp) == str:
+        raise HTTPException(status_code=404, detail=resp)
+    
+    return resp[1]

@@ -177,3 +177,14 @@ async def get_home_page_products():
     #print(response)
     
     return response
+
+async def rate_product(product_code, rating):
+    try:
+        resp = await product_service.rate_product(product_code, rating)
+    except Exception as e:
+        return "Error with db"
+    
+    if type(resp) == str:
+        return resp
+    
+    return "success", resp

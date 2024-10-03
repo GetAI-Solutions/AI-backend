@@ -295,3 +295,18 @@ async def find_products_by_barcodes(barcodes: list):
     except Exception as e:
         print(e)
         return "Error with DB"
+    
+
+async def rate_product(bar_code: str, rating: int):
+    updated_rating = {}
+    try:
+        curr_rating = productsClient.find_one({"product_code": int(bar_code)})["ratings"]
+        updated_rating['rating'] = (curr_rating['rating'] + rating) / ((curr_rating['total'] + 1)*5)
+        updated_rating['total'] = curr_rating['total'] + 1
+        productsClient.find_one_and_update({"product_code": int(bar_code)}, {"$set" : {"rating" : updated_rating}})
+    except:
+        return "Error with Db in updating product rating"
+    
+    return {
+        "response" : "Rating Added"
+    }
