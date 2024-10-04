@@ -5,6 +5,7 @@ from ..application import barcode_service, bot_service , product_service, user_s
 from config import OAI_KEY_TOKEN
 from ..schema_templates.templates import language_code, chatTemp
 from ..infrastructure.external.perplexity_sourcing import get_details_from_perplexity
+from ..infrastructure.external import text_to_speech
 import uuid
 
 async def upload_barcode(file: UploadFile):
@@ -201,3 +202,12 @@ async def search_perplexity_by_name(product_name: str, userID: str):
             return "Product name not looking accurate. Please try again"
     except Exception as e:	
         return "Error in getting validation response content"
+    
+
+async def convert_text_to_speech(text):
+    try:
+        response = text_to_speech.synthesize_text(text)
+    except Exception as e:
+        return "Error in converting text to speech"
+    
+    return "success", response

@@ -162,4 +162,5 @@ cython_debug/
 #.idea/
 
 oauth2_creds.json
+gcloud_cred.json
 prev/

@@ -2,6 +2,8 @@ from dotenv import load_dotenv
 import os
 from azure.storage.blob import BlobServiceClient, ContentSettings
 from openai import OpenAI
+import requests
+import json
 
 load_dotenv()
 appENV = os.getenv("APP_ENV", "local")
@@ -13,6 +15,7 @@ OAI_KEY_TOKEN = os.getenv("OAI_KEY_TOKEN", "local")
 blob_conn_str = os.getenv("BLOLB_CONNECTION_STRING")
 Perplexity_KEY = os.getenv("PERPLEXAI_KEY")
 CONT_NAME = os.getenv("CONT_NAME")
+GCLOUD_JSON_URL = os.getenv("GCLOUD_JSON_URL")
 
 def load_cont(container_name, blob_conn_str):
     blob_service_client = BlobServiceClient.from_connection_string(blob_conn_str)
@@ -31,3 +34,13 @@ contClient = load_cont(CONT_NAME, blob_conn_str)
 bot = OpenAI(
     api_key=OAI_KEY
 )
+
+# Set the environment variable GOOGLE_APPLICATION_CREDENTIALS to the file path of the JSON file that contains your service account key.
+try:
+    with open("gcloud_cred.json", "w") as f:
+        json_f = requests.get(GCLOUD_JSON_URL).json()
+        json.dump(json_f, f)
+except Exception as e:
+    print("Unable to download Gcloud cred for TTS \n"+str(e))
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="gcloud_cred.json"

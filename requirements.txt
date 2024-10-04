@@ -24,3 +24,4 @@ replicate
 pillow
 yagmail[all]
 azure-storage-blob
+google-cloud-texttospeech

@@ -3,6 +3,8 @@ from io import BytesIO
 from PIL import Image
 from ..interface import common_controller
 from ..schema_templates.templates import chatTemp
+from fastapi.responses import StreamingResponse
+import io
 
 
 router = APIRouter()
@@ -67,4 +69,20 @@ async def search_perplexity_by_name(product_name: str = Form(...), userID: str =
         "product_details": resp["response"][1],
         "product_code": resp["uuid_bar_code"]}
     }
+
+@router.get(f"/get-speech-from-text")
+async def get_speech_from_text(text: str = Form(...)):
+    try:
+        resp = await common_controller.convert_text_to_speech(text)
+    except Exception as e:
+        print(str(e))
+        raise HTTPException(400, "Unknown Error")
+    
+    if type(resp) == str:
+        raise HTTPException(400, resp)
+    #return resp[1].audio_content
+    audio_stream = io.BytesIO(resp[1].audio_content)
+    return StreamingResponse(audio_stream, media_type="audio/wav")
+
+
 
