@@ -70,7 +70,7 @@ async def search_perplexity_by_name(product_name: str = Form(...), userID: str =
         "product_code": resp["uuid_bar_code"]}
     }
 
-@router.get(f"/get-speech-from-text")
+@router.post(f"/get-speech-from-text")
 async def get_speech_from_text(text: str = Form(...)):
     try:
         resp = await common_controller.convert_text_to_speech(text)
